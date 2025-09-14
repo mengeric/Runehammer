@@ -34,6 +34,9 @@ type Config struct {
 
 	// 其他配置
 	maxCacheSize int // 内存缓存最大条目数
+	
+	// 动态引擎配置
+	dynamicConfig *DynamicConfig // 动态引擎配置选项
 }
 
 // DefaultConfig 默认配置
@@ -222,5 +225,300 @@ func WithMaxCacheSize(size int) Option {
 func WithDisableCache() Option {
 	return func(c *Config) {
 		c.enableCache = false
+	}
+}
+
+// ============================================================================
+// 动态引擎配置 - 用于动态规则生成和转换
+// ============================================================================
+
+// DynamicConfig 动态引擎配置
+type DynamicConfig struct {
+	// 转换器配置
+	ConverterConfig ConverterConfig `json:"converter_config" yaml:"converter_config"`
+	
+	// 表达式解析器配置
+	ParserConfig ParserConfig `json:"parser_config" yaml:"parser_config"`
+	
+	// 缓存配置
+	CacheConfig DynamicCacheConfig `json:"cache_config" yaml:"cache_config"`
+	
+	// 验证器配置
+	ValidatorConfig ValidatorConfig `json:"validator_config" yaml:"validator_config"`
+	
+	// 执行配置
+	ExecutionConfig ExecutionConfig `json:"execution_config" yaml:"execution_config"`
+	
+	// 自定义函数配置
+	CustomFunctions map[string]interface{} `json:"custom_functions" yaml:"custom_functions"`
+}
+
+// ParserConfig 表达式解析器配置
+type ParserConfig struct {
+	// 默认语法类型
+	DefaultSyntax SyntaxType `json:"default_syntax" yaml:"default_syntax"`
+	
+	// 支持的语法类型
+	SupportedSyntax []SyntaxType `json:"supported_syntax" yaml:"supported_syntax"`
+	
+	// 自定义操作符映射
+	CustomOperators map[string]string `json:"custom_operators" yaml:"custom_operators"`
+	
+	// 自定义函数映射
+	CustomFunctionMappings map[string]string `json:"custom_function_mappings" yaml:"custom_function_mappings"`
+	
+	// 自定义关键字映射
+	CustomKeywords map[string]string `json:"custom_keywords" yaml:"custom_keywords"`
+}
+
+// DynamicCacheConfig 动态缓存配置
+type DynamicCacheConfig struct {
+	// 是否启用缓存
+	Enabled bool `json:"enabled" yaml:"enabled"`
+	
+	// 缓存大小限制
+	MaxSize int `json:"max_size" yaml:"max_size"`
+	
+	// 缓存TTL
+	TTL time.Duration `json:"ttl" yaml:"ttl"`
+	
+	// 是否启用LRU淘汰
+	EnableLRU bool `json:"enable_lru" yaml:"enable_lru"`
+	
+	// 缓存清理间隔
+	CleanupInterval time.Duration `json:"cleanup_interval" yaml:"cleanup_interval"`
+}
+
+// ValidatorConfig 验证器配置
+type ValidatorConfig struct {
+	// 是否启用验证
+	Enabled bool `json:"enabled" yaml:"enabled"`
+	
+	// 严格模式
+	StrictMode bool `json:"strict_mode" yaml:"strict_mode"`
+	
+	// 自定义验证规则
+	CustomValidators map[string]interface{} `json:"custom_validators" yaml:"custom_validators"`
+}
+
+// ExecutionConfig 执行配置
+type ExecutionConfig struct {
+	// 是否启用并行执行
+	EnableParallel bool `json:"enable_parallel" yaml:"enable_parallel"`
+	
+	// 并发数量限制
+	MaxConcurrency int `json:"max_concurrency" yaml:"max_concurrency"`
+	
+	// 执行超时时间
+	ExecutionTimeout time.Duration `json:"execution_timeout" yaml:"execution_timeout"`
+	
+	// 是否启用规则优先级
+	EnablePriority bool `json:"enable_priority" yaml:"enable_priority"`
+	
+	// 最大规则数量限制
+	MaxRules int `json:"max_rules" yaml:"max_rules"`
+}
+
+// DefaultDynamicConfig 默认动态配置
+func DefaultDynamicConfig() *DynamicConfig {
+	return &DynamicConfig{
+		ConverterConfig: ConverterConfig{
+			VariablePrefix: map[string]string{
+				"customer": "customer",
+				"order":    "order",
+				"user":     "user",
+				"data":     "data",
+				"result":   "result",
+			},
+			OperatorMapping: map[string]string{
+				"==": "==",
+				"!=": "!=",
+				">":  ">",
+				"<":  "<",
+				">=": ">=",
+				"<=": "<=",
+				"and": "&&",
+				"or":  "||",
+				"not": "!",
+				"in":       "Contains",
+				"contains": "Contains",
+				"matches":  "Matches",
+				"between":  "BETWEEN",
+			},
+			FunctionMapping: map[string]string{
+				"now":        "Now()",
+				"today":      "Today()",
+				"nowMillis":  "NowMillis()",
+				"timeToMillis": "TimeToMillis",
+				"millisToTime": "MillisToTime",
+				"daysBetween": "DaysBetween",
+				"sum":        "Sum",
+				"avg":        "Avg",
+				"max":        "Max",
+				"min":        "Min",
+				"count":      "Count",
+			},
+			DefaultPriority: 50,
+			StrictMode:      false,
+		},
+		ParserConfig: ParserConfig{
+			DefaultSyntax: SyntaxTypeSQL,
+			SupportedSyntax: []SyntaxType{
+				SyntaxTypeSQL,
+				SyntaxTypeJavaScript,
+			},
+			CustomOperators:        make(map[string]string),
+			CustomFunctionMappings: make(map[string]string),
+			CustomKeywords:         make(map[string]string),
+		},
+		CacheConfig: DynamicCacheConfig{
+			Enabled:         true,
+			MaxSize:         500,
+			TTL:             5 * time.Minute,
+			EnableLRU:       true,
+			CleanupInterval: 1 * time.Minute,
+		},
+		ValidatorConfig: ValidatorConfig{
+			Enabled:          true,
+			StrictMode:       false,
+			CustomValidators: make(map[string]interface{}),
+		},
+		ExecutionConfig: ExecutionConfig{
+			EnableParallel:   true,
+			MaxConcurrency:   10,
+			ExecutionTimeout: 30 * time.Second,
+			EnablePriority:   true,
+			MaxRules:         100,
+		},
+		CustomFunctions: make(map[string]interface{}),
+	}
+}
+
+// GetDynamicConfig 获取动态配置
+func (c *Config) GetDynamicConfig() *DynamicConfig {
+	if c.dynamicConfig == nil {
+		c.dynamicConfig = DefaultDynamicConfig()
+	}
+	return c.dynamicConfig
+}
+
+// ============================================================================
+// 动态配置选项函数
+// ============================================================================
+
+// WithDynamicConfig 设置动态配置
+func WithDynamicConfig(config *DynamicConfig) Option {
+	return func(c *Config) {
+		c.dynamicConfig = config
+	}
+}
+
+// WithConverterConfig 设置转换器配置
+func WithConverterConfig(config ConverterConfig) Option {
+	return func(c *Config) {
+		if c.dynamicConfig == nil {
+			c.dynamicConfig = DefaultDynamicConfig()
+		}
+		c.dynamicConfig.ConverterConfig = config
+	}
+}
+
+// WithParserConfig 设置解析器配置
+func WithParserConfig(config ParserConfig) Option {
+	return func(c *Config) {
+		if c.dynamicConfig == nil {
+			c.dynamicConfig = DefaultDynamicConfig()
+		}
+		c.dynamicConfig.ParserConfig = config
+	}
+}
+
+// WithDynamicCacheConfig 设置动态缓存配置
+func WithDynamicCacheConfig(config DynamicCacheConfig) Option {
+	return func(c *Config) {
+		if c.dynamicConfig == nil {
+			c.dynamicConfig = DefaultDynamicConfig()
+		}
+		c.dynamicConfig.CacheConfig = config
+	}
+}
+
+// WithValidatorConfig 设置验证器配置
+func WithValidatorConfig(config ValidatorConfig) Option {
+	return func(c *Config) {
+		if c.dynamicConfig == nil {
+			c.dynamicConfig = DefaultDynamicConfig()
+		}
+		c.dynamicConfig.ValidatorConfig = config
+	}
+}
+
+// WithExecutionConfig 设置执行配置
+func WithExecutionConfig(config ExecutionConfig) Option {
+	return func(c *Config) {
+		if c.dynamicConfig == nil {
+			c.dynamicConfig = DefaultDynamicConfig()
+		}
+		c.dynamicConfig.ExecutionConfig = config
+	}
+}
+
+// WithCustomFunctions 设置自定义函数
+func WithCustomFunctions(functions map[string]interface{}) Option {
+	return func(c *Config) {
+		if c.dynamicConfig == nil {
+			c.dynamicConfig = DefaultDynamicConfig()
+		}
+		c.dynamicConfig.CustomFunctions = functions
+	}
+}
+
+// WithDefaultSyntax 设置默认语法
+func WithDefaultSyntax(syntax SyntaxType) Option {
+	return func(c *Config) {
+		if c.dynamicConfig == nil {
+			c.dynamicConfig = DefaultDynamicConfig()
+		}
+		c.dynamicConfig.ParserConfig.DefaultSyntax = syntax
+	}
+}
+
+// WithSupportedSyntax 设置支持的语法类型
+func WithSupportedSyntax(syntaxes ...SyntaxType) Option {
+	return func(c *Config) {
+		if c.dynamicConfig == nil {
+			c.dynamicConfig = DefaultDynamicConfig()
+		}
+		c.dynamicConfig.ParserConfig.SupportedSyntax = syntaxes
+	}
+}
+
+// WithCustomOperators 设置自定义操作符
+func WithCustomOperators(operators map[string]string) Option {
+	return func(c *Config) {
+		if c.dynamicConfig == nil {
+			c.dynamicConfig = DefaultDynamicConfig()
+		}
+		c.dynamicConfig.ParserConfig.CustomOperators = operators
+	}
+}
+
+// WithExecutionTimeout 设置执行超时时间
+func WithExecutionTimeout(timeout time.Duration) Option {
+	return func(c *Config) {
+		if c.dynamicConfig == nil {
+			c.dynamicConfig = DefaultDynamicConfig()
+		}
+		c.dynamicConfig.ExecutionConfig.ExecutionTimeout = timeout
+	}
+}
+
+// WithMaxConcurrency 设置最大并发数
+func WithMaxConcurrency(max int) Option {
+	return func(c *Config) {
+		if c.dynamicConfig == nil {
+			c.dynamicConfig = DefaultDynamicConfig()
+		}
+		c.dynamicConfig.ExecutionConfig.MaxConcurrency = max
 	}
 }
