@@ -15,10 +15,10 @@ import (
 
 // injectInputData 注入输入数据 - 将各种类型的输入数据注入到执行上下文
 //
-// 支持的输入数据类型:
-//   1. Map类型：将每个键值对单独注入到上下文
-//   2. 结构体类型：作为单个对象注入，使用类型名作为变量名
-//   3. 其他类型：直接以"Input"名称注入
+// 变量注入规则:
+//   1. Map类型：将整个map作为"Params"变量注入
+//   2. 结构体类型：作为单个对象注入，使用类型名（小写）作为变量名
+//   3. 匿名结构体和其他类型：统一以"Params"名称注入
 //
 // 参数:
 //   dataCtx - Grule数据上下文
@@ -46,16 +46,11 @@ func (e *engineImpl[T]) injectInputData(dataCtx ast.IDataContext, input any) err
 	}
 }
 
-// injectMapData 注入Map类型数据 - 将map中的每个键值对作为独立变量注入
+// injectMapData 注入Map类型数据 - 将整个map作为Params变量注入
 func (e *engineImpl[T]) injectMapData(dataCtx ast.IDataContext, v reflect.Value) error {
-	// 遍历map中的所有键值对
-	for _, key := range v.MapKeys() {
-		keyStr := fmt.Sprintf("%v", key.Interface())
-		value := v.MapIndex(key).Interface()
-		
-		if err := dataCtx.Add(keyStr, value); err != nil {
-			return fmt.Errorf("注入map项 %s 失败: %w", keyStr, err)
-		}
+	// 将整个map作为Params注入
+	if err := dataCtx.Add("Params", v.Interface()); err != nil {
+		return fmt.Errorf("注入Params变量失败: %w", err)
 	}
 	return nil
 }
@@ -65,7 +60,7 @@ func (e *engineImpl[T]) injectStructData(dataCtx ast.IDataContext, input any, t 
 	// 使用结构体类型名作为变量名，转为小写
 	inputName := strings.ToLower(t.Name())
 	if inputName == "" {
-		inputName = "Input" // 匿名结构体使用默认名称
+		inputName = "Params" // 匿名结构体使用统一的Params名称
 	}
 	
 	if err := dataCtx.Add(inputName, input); err != nil {
@@ -75,10 +70,10 @@ func (e *engineImpl[T]) injectStructData(dataCtx ast.IDataContext, input any, t 
 	return nil
 }
 
-// injectDefaultData 注入其他类型数据 - 直接以Input名称注入
+// injectDefaultData 注入其他类型数据 - 直接以Params名称注入
 func (e *engineImpl[T]) injectDefaultData(dataCtx ast.IDataContext, input any) error {
-	if err := dataCtx.Add("Input", input); err != nil {
-		return fmt.Errorf("注入Input变量失败: %w", err)
+	if err := dataCtx.Add("Params", input); err != nil {
+		return fmt.Errorf("注入Params变量失败: %w", err)
 	}
 	return nil
 }

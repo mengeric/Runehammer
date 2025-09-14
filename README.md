@@ -135,7 +135,7 @@ func main() {
 ```grl
 rule UserVipDiscount "VIP用户折扣规则" salience 100 {
     when
-        user.vip == true && user.age >= 18 && order.amount >= 500
+        Params.user.vip == true && Params.user.age >= 18 && Params.order.amount >= 500
     then
         result["discount"] = 0.8;
         result["message"] = "VIP用户享受8折优惠";
@@ -144,7 +144,7 @@ rule UserVipDiscount "VIP用户折扣规则" salience 100 {
 
 rule RegularDiscount "普通用户折扣规则" salience 50 {
     when
-        result["discount"] == nil && order.amount >= 100
+        result["discount"] == nil && Params.order.amount >= 100
     then
         result["discount"] = 0.9;
         result["message"] = "满100元享受9折优惠";
@@ -178,7 +178,7 @@ dynamicEngine := runehammer.NewDynamicEngine[map[string]interface{}](
 
 // 执行简单规则
 simpleRule := runehammer.SimpleRule{
-    When: "customer.age >= 18 && order.amount > 100",
+    When: "Params.customer.age >= 18 && Params.order.amount > 100",
     Then: map[string]string{
         "result.eligible": "true",
         "result.discount": "0.1",
@@ -202,7 +202,7 @@ result, err := dynamicEngine.ExecuteRuleDefinition(ctx, simpleRule, input)
 
 ```go
 rule := runehammer.SimpleRule{
-    When: "user.vip == true && order.amount > 500",
+    When: "Params.user.vip == true && Params.order.amount > 500",
     Then: map[string]string{
         "result.priority":     "\"high\"",
         "result.free_shipping": "true",
@@ -347,10 +347,10 @@ dynamicEngine.RegisterCustomFunctions(map[string]interface{}{
 
 // 在规则中使用
 rule := runehammer.SimpleRule{
-    When: "ValidateEmail(customer.email) && order.amount > 0",
+    When: "ValidateEmail(Params.customer.email) && Params.order.amount > 0",
     Then: map[string]string{
-        "result.discount": "CalculateDiscount(order.amount, 0.1)",
-        "result.region":   "GetRegionCode(customer.address)",
+        "result.discount": "CalculateDiscount(Params.order.amount, 0.1)",
+        "result.region":   "GetRegionCode(Params.customer.address)",
     },
 }
 ```
@@ -616,32 +616,120 @@ Runehammer 提供了 50+ 内置函数，涵盖各种常用场景：
 ```grl
 rule MathExample "数学函数示例" salience 100 {
     when
-        Abs(customer.balance) > 1000 &&
-        Between(customer.age, 18, 65)
+        Abs(Params.customer.balance) > 1000 &&
+        Between(Params.customer.age, 18, 65)
     then
-        result["credit_score"] = Round(customer.income * 0.001);
-        result["risk_level"] = IF(customer.debt_ratio > 0.5, "高", "低");
+        result["credit_score"] = Round(Params.customer.income * 0.001);
+        result["risk_level"] = IF(Params.customer.debt_ratio > 0.5, "高", "低");
 }
 
 rule StringExample "字符串函数示例" salience 90 {
     when
-        Contains(customer.email, "@") &&
-        LengthBetween(customer.name, 2, 50)
+        Contains(Params.customer.email, "@") &&
+        LengthBetween(Params.customer.name, 2, 50)
     then
-        result["email_valid"] = IsEmail(customer.email);
-        result["name_upper"] = ToUpper(customer.name);
+        result["email_valid"] = IsEmail(Params.customer.email);
+        result["name_upper"] = ToUpper(Params.customer.name);
 }
 
 rule TimeExample "时间函数示例" salience 80 {
     when
-        customer.last_login != nil
+        Params.customer.last_login != nil
     then
-        result["days_inactive"] = (Now().Unix() - customer.last_login.Unix()) / 86400;
+        result["days_inactive"] = (Now().Unix() - Params.customer.last_login.Unix()) / 86400;
         result["is_active"] = result["days_inactive"] <= 30;
         result["current_millis"] = NowMillis();
-        result["login_millis"] = TimeToMillis(customer.last_login);
+        result["login_millis"] = TimeToMillis(Params.customer.last_login);
 }
 ```
+
+## 📋 变量注入规则
+
+Runehammer在执行规则时，会将输入数据按照以下规则注入到规则执行上下文中：
+
+### 🔤 注入规则
+
+| 输入数据类型 | 注入方式 | 规则中访问方式 | 示例 |
+|-------------|----------|---------------|------|
+| **Map类型** | 作为整体注入为`Params` | `Params.键名` | `Params.customer.age`、`Params.order.amount` |
+| **结构体类型** | 使用类型名（小写）| `类型名.字段` | `user.name`、`product.price` |
+| **匿名结构体** | 统一使用`Params` | `Params.字段` | `Params.value`、`Params.data` |
+| **其他类型** | 统一使用`Params` | 直接访问`Params` | `Params > 100`、`Params == "test"` |
+
+### 🔍 详细说明
+
+#### 1. Map类型数据注入
+```go
+// 输入数据
+input := map[string]interface{}{
+    "customer": map[string]interface{}{
+        "age":    25,
+        "vip":    true,
+    },
+    "order": map[string]interface{}{
+        "amount": 1500,
+        "status": "paid",
+    },
+}
+
+// 规则中通过Params访问
+rule CustomerVip "VIP客户判断" {
+    when
+        Params.customer.age >= 18 && Params.customer.vip == true && Params.order.amount > 1000
+    then
+        result["level"] = "VIP";
+}
+```
+
+#### 2. 结构体类型数据注入
+```go
+// 定义结构体
+type Customer struct {
+    Age  int    `json:"age"`
+    Name string `json:"name"`
+    VIP  bool   `json:"vip"`
+}
+
+// 输入数据
+customer := Customer{Age: 25, Name: "张三", VIP: true}
+
+// 规则中使用类型名（小写）访问
+rule CheckCustomer "检查客户" {
+    when
+        customer.Age >= 18 && customer.VIP == true
+    then
+        result["eligible"] = true;
+        result["message"] = customer.Name + " 符合条件";
+}
+```
+
+#### 3. 匿名结构体和其他类型
+```go
+// 匿名结构体
+input := struct {
+    Value int
+    Flag  bool
+}{Value: 100, Flag: true}
+
+// 或者基本类型
+input := 100
+
+// 规则中使用Params访问
+rule CheckValue "检查值" {
+    when
+        Params.Value > 50 && Params.Flag == true
+        // 或对于基本类型: Params > 50
+    then
+        result["valid"] = true;
+}
+```
+
+### ⚠️ 注意事项
+
+1. **变量名大小写**：结构体类型名会转换为小写作为变量名
+2. **统一访问方式**：除结构体类型外，所有其他类型都通过`Params`访问
+3. **保留字段**：避免使用`result`作为输入字段名，这是输出结果的保留字段
+4. **类型安全**：在规则中访问字段时，请确保字段存在，否则可能导致执行错误
 
 ## 📚 API 文档
 
@@ -828,7 +916,7 @@ converter := runehammer.NewGRLConverter()
 
 // 从 JSON 转换
 jsonRule := `{
-    "when": "customer.age >= 18 && order.amount > 100",
+    "when": "Params.customer.age >= 18 && Params.order.amount > 100",
     "then": {
         "result.eligible": "true",
         "result.discount": "0.1"
@@ -880,7 +968,7 @@ condition, _ = parser.ParseCondition("orders.filter(o => o.amount > 100).length 
 // JavaScript转换
 parser.SetSyntax(runehammer.SyntaxTypeJavaScript)
 condition, _ = parser.ParseCondition("客户年龄大于18且订单金额超过1000")
-// 输出: "customer.age > 18 && order.amount > 1000"
+// 输出: "Params.customer.age > 18 && Params.order.amount > 1000"
 ```
 
 ### 批量规则执行
@@ -890,7 +978,7 @@ condition, _ = parser.ParseCondition("客户年龄大于18且订单金额超过1
 rules := []interface{}{
     // 简单规则
     runehammer.SimpleRule{
-        When: "order.amount > 500",
+        When: "Params.order.amount > 500",
         Then: map[string]string{
             "result.free_shipping": "true",
         },
@@ -901,8 +989,8 @@ rules := []interface{}{
         Name:    "loyalty_score",
         Formula: "purchase_count * 10 + total_amount * 0.01",
         Variables: map[string]string{
-            "purchase_count": "customer.purchase_count",
-            "total_amount":   "customer.total_amount",
+            "purchase_count": "Params.customer.purchase_count",
+            "total_amount":   "Params.customer.total_amount",
         },
     },
     
@@ -912,7 +1000,7 @@ rules := []interface{}{
         Name: "VIP检查",
         Conditions: runehammer.Condition{
             Type:     "simple",
-            Left:     "customer.vip_level",
+            Left:     "Params.customer.vip_level",
             Operator: ">=",
             Right:    3,
         },

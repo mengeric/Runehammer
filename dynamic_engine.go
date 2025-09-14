@@ -336,14 +336,12 @@ func (e *DynamicEngine[T]) executeBatchParallel(
 func (e *DynamicEngine[T]) injectInputData(dataCtx ast.IDataContext, input any) error {
 	switch data := input.(type) {
 	case map[string]interface{}:
-		// 注入map数据
-		for key, value := range data {
-			dataCtx.Add(key, value)
-		}
+		// 将整个map作为Params注入
+		dataCtx.Add("Params", data)
 		
 	default:
 		// 注入结构体或其他类型
-		dataCtx.Add("data", input)
+		dataCtx.Add("Params", input)
 	}
 	
 	return nil
