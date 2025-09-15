@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -229,16 +230,19 @@ func (e *DynamicEngine[T]) ClearCache() {
 
 // compileGRL 编译GRL规则
 func (e *DynamicEngine[T]) compileGRL(grl, ruleID string) (*ast.KnowledgeBase, error) {
-	// 创建知识库实例
-	knowledgeBase, _ := e.knowledgeLibrary.NewKnowledgeBaseInstance(ruleID, "1.0.0")
-	
 	// 创建规则资源
 	ruleBytes := pkg.NewBytesResource([]byte(grl))
 	
-	// 构建规则
+	// 构建规则到知识库
 	ruleBuilder := builder.NewRuleBuilder(e.knowledgeLibrary)
 	if err := ruleBuilder.BuildRuleFromResource(ruleID, "1.0.0", ruleBytes); err != nil {
 		return nil, fmt.Errorf("构建规则失败: %w", err)
+	}
+	
+	// 获取知识库实例
+	knowledgeBase, err := e.knowledgeLibrary.NewKnowledgeBaseInstance(ruleID, "1.0.0")
+	if err != nil {
+		return nil, fmt.Errorf("创建知识库实例失败: %w", err)
 	}
 	
 	return knowledgeBase, nil
@@ -266,8 +270,19 @@ func (e *DynamicEngine[T]) executeWithKnowledgeBase(
 	// 注入自定义函数
 	e.injectCustomFunctions(dataCtx)
 	
+	// 创建结果容器，规则会向其中写入结果
+	resultMap := make(map[string]interface{})
+	if err := dataCtx.Add("result", resultMap); err != nil {
+		return zero, fmt.Errorf("创建结果容器失败: %w", err)
+	}
+	
 	// 创建规则引擎
 	ruleEngine := engine.NewGruleEngine()
+	
+	// 验证知识库不为空
+	if knowledgeBase == nil {
+		return zero, fmt.Errorf("知识库为空")
+	}
 	
 	// 执行规则
 	if err := ruleEngine.Execute(dataCtx, knowledgeBase); err != nil {
@@ -332,18 +347,66 @@ func (e *DynamicEngine[T]) executeBatchParallel(
 	return results, nil
 }
 
-// injectInputData 注入输入数据
+// injectInputData 注入输入数据 - 将各种类型的输入数据注入到执行上下文
+//
+// 变量注入规则:
+//   1. 结构体类型：作为单个对象注入，使用类型名（小写）作为变量名
+//   2. 匿名结构体和其他类型：统一以"Params"名称注入
+//   
+// 注意：不支持 map[string]interface{} 类型，请使用结构体替代
+//
+// 参数:
+//   dataCtx - Grule数据上下文
+//   input   - 输入数据，支持结构体和基本类型
+//
+// 返回值:
+//   error - 注入过程中的错误
 func (e *DynamicEngine[T]) injectInputData(dataCtx ast.IDataContext, input any) error {
-	switch data := input.(type) {
-	case map[string]interface{}:
-		// 将整个map作为Params注入
-		dataCtx.Add("Params", data)
-		
+	// 首先初始化result变量作为一个空的map
+	result := make(map[string]any)
+	if err := dataCtx.Add("result", result); err != nil {
+		return fmt.Errorf("注入result变量失败: %w", err)
+	}
+
+	v := reflect.ValueOf(input)
+	t := reflect.TypeOf(input)
+
+	// 处理指针类型，获取实际的值和类型
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+		t = t.Elem()
+	}
+
+	switch v.Kind() {
+	case reflect.Map:
+		return fmt.Errorf("不支持 map 类型，请使用结构体替代")
+	case reflect.Struct:
+		return e.injectStructData(dataCtx, input, t)
 	default:
-		// 注入结构体或其他类型
-		dataCtx.Add("Params", input)
+		return e.injectDefaultData(dataCtx, input)
+	}
+}
+
+// injectStructData 注入结构体数据 - 将整个结构体作为单个对象注入
+func (e *DynamicEngine[T]) injectStructData(dataCtx ast.IDataContext, input any, t reflect.Type) error {
+	// 使用结构体类型名作为变量名，转为小写
+	inputName := strings.ToLower(t.Name())
+	if inputName == "" {
+		inputName = "Params" // 匿名结构体使用统一的Params名称
 	}
 	
+	if err := dataCtx.Add(inputName, input); err != nil {
+		return fmt.Errorf("注入结构体 %s 失败: %w", inputName, err)
+	}
+	
+	return nil
+}
+
+// injectDefaultData 注入其他类型数据 - 直接以Params名称注入
+func (e *DynamicEngine[T]) injectDefaultData(dataCtx ast.IDataContext, input any) error {
+	if err := dataCtx.Add("Params", input); err != nil {
+		return fmt.Errorf("注入Params变量失败: %w", err)
+	}
 	return nil
 }
 
@@ -403,21 +466,26 @@ func (e *DynamicEngine[T]) injectCustomFunctions(dataCtx ast.IDataContext) {
 
 // extractResult 提取结果
 func (e *DynamicEngine[T]) extractResult(dataCtx ast.IDataContext) (T, error) {
-	var result T
+	var zero T
 	
-	// 创建一个结果map，规则会向其中写入结果
-	resultMap := make(map[string]interface{})
-	dataCtx.Add("result", resultMap)
-	
-	// 检查是否有结果数据
-	if len(resultMap) > 0 {
-		// 对于map[string]any类型的结果
-		if mapResult, ok := any(resultMap).(T); ok {
-			return mapResult, nil
-		}
+	// 获取结果变量
+	resultVar := dataCtx.Get("result")
+	if resultVar == nil {
+		return zero, fmt.Errorf("未找到结果变量")
 	}
 	
-	return result, nil
+	// 获取结果值
+	resultValue, err := resultVar.GetValue()
+	if err != nil {
+		return zero, fmt.Errorf("获取结果值失败: %w", err)
+	}
+	
+	// 将结果转换为目标类型
+	if typedResult, ok := resultValue.Interface().(T); ok {
+		return typedResult, nil
+	}
+	
+	return zero, fmt.Errorf("结果类型转换失败，期望类型 %T，实际类型 %T", zero, resultValue.Interface())
 }
 
 // validateRuleDefinition 验证规则定义

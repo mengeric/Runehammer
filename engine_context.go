@@ -27,6 +27,12 @@ import (
 // 返回值:
 //   error - 注入过程中的错误
 func (e *engineImpl[T]) injectInputData(dataCtx ast.IDataContext, input any) error {
+	// 首先初始化result变量作为一个空的map
+	result := make(map[string]any)
+	if err := dataCtx.Add("result", result); err != nil {
+		return fmt.Errorf("注入result变量失败: %w", err)
+	}
+
 	v := reflect.ValueOf(input)
 	t := reflect.TypeOf(input)
 

@@ -128,6 +128,13 @@ func (e *engineImpl[T]) Exec(ctx context.Context, bizCode string, input any) (T,
 	e.injectBuiltinFunctions(dataCtx)
 
 	// 8. 执行规则
+	if knowledgeBase == nil {
+		if e.logger != nil {
+			e.logger.Errorf(ctx, "知识库为空", "bizCode", bizCode)
+		}
+		return zero, fmt.Errorf("知识库为空")
+	}
+	
 	if err := ruleEngine.Execute(dataCtx, knowledgeBase); err != nil {
 		if e.logger != nil {
 			e.logger.Errorf(ctx, "规则执行失败", "bizCode", bizCode, "error", err)
@@ -201,8 +208,19 @@ func (e *engineImpl[T]) compileRules(bizCode string, rules []*Rule) (*ast.Knowle
 		return kb.(*ast.KnowledgeBase), nil
 	}
 
+	// 使用互斥锁保护编译过程，防止并发编译同一个业务码的规则
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	
+	// 双重检查，防止在等待锁的过程中其他协程已经编译完成
+	if kb, ok := e.knowledgeBases.Load(bizCode); ok {
+		return kb.(*ast.KnowledgeBase), nil
+	}
+
 	// 创建新的知识库
-	knowledgeBase, _ := e.knowledgeLibrary.NewKnowledgeBaseInstance(bizCode, "1.0.0")
+	if e.knowledgeLibrary == nil {
+		return nil, fmt.Errorf("知识库库为空")
+	}
 
 	// 编译每个规则
 	for _, rule := range rules {
@@ -215,9 +233,18 @@ func (e *engineImpl[T]) compileRules(bizCode string, rules []*Rule) (*ast.Knowle
 
 		// 构建规则
 		ruleBuilder := builder.NewRuleBuilder(e.knowledgeLibrary)
-		if err := ruleBuilder.BuildRuleFromResource(rule.Name, "1.0.0", ruleBytes); err != nil {
+		if err := ruleBuilder.BuildRuleFromResource(bizCode, "1.0.0", ruleBytes); err != nil {
 			return nil, fmt.Errorf("编译规则 %s 失败: %w", rule.Name, err)
 		}
+	}
+
+	// 从knowledge library中获取构建好的知识库
+	knowledgeBase, err := e.knowledgeLibrary.NewKnowledgeBaseInstance(bizCode, "1.0.0")
+	if err != nil {
+		return nil, fmt.Errorf("获取知识库实例失败: %w", err)
+	}
+	if knowledgeBase == nil {
+		return nil, fmt.Errorf("知识库实例为空")
 	}
 
 	// 缓存编译结果

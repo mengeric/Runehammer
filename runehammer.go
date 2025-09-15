@@ -18,7 +18,8 @@ import (
 // Engine 规则引擎接口 - 提供规则执行的核心能力
 //
 // 泛型参数:
-//   T - 规则执行结果的类型，支持任意类型
+//
+//	T - 规则执行结果的类型，支持任意类型
 //
 // 核心功能:
 //   - 基于业务码执行规则
@@ -52,21 +53,25 @@ type Engine[T any] interface {
 // New 创建规则引擎实例 - 工厂方法，支持选项模式配置
 //
 // 泛型参数:
-//   T - 规则执行结果的类型
+//
+//	T - 规则执行结果的类型
 //
 // 参数:
-//   opts - 配置选项，支持数据库、缓存、日志等配置
+//
+//	opts - 配置选项，支持数据库、缓存、日志等配置
 //
 // 返回值:
-//   Engine[T] - 规则引擎实例
-//   error     - 创建过程中的错误
+//
+//	Engine[T] - 规则引擎实例
+//	error     - 创建过程中的错误
 //
 // 使用示例:
-//   engine, err := New[MyResult](
-//       WithDB(db),
-//       WithRedisCache("localhost:6379", 0),
-//       WithLogger(logger),
-//   )
+//
+//	engine, err := New[MyResult](
+//	    WithDB(db),
+//	    WithRedisCache("localhost:6379", 0),
+//	    WithLogger(logger),
+//	)
 func New[T any](opts ...Option) (Engine[T], error) {
 	// 1. 初始化默认配置
 	cfg := DefaultConfig()
@@ -101,11 +106,11 @@ func New[T any](opts ...Option) (Engine[T], error) {
 
 	// 7. 创建引擎实例
 	eng := NewEngineImpl[T](
-		cfg,  // 直接传递Config，它现在实现了ConfigInterface
+		cfg, // 直接传递Config，它现在实现了ConfigInterface
 		ruleMapper,
 		cfg.GetCache(),
 		CacheKeyBuilder{},
-		cfg.GetLogger().(Logger),  // 类型断言从interface{}转换为Logger
+		cfg.GetLogger().(Logger), // 类型断言从interface{}转换为Logger
 		ast.NewKnowledgeLibrary(),
 		&sync.Map{},
 		cron.New(),

@@ -1,6 +1,7 @@
 package runehammer
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -19,7 +20,7 @@ type Config struct {
 	tableName   string       // 规则表名，默认为runehammer_rules
 
 	// 缓存配置
-	cache       Cache   // 缓存接口实例，可以是Redis或内存缓存
+	cache       Cache         // 缓存接口实例，可以是Redis或内存缓存
 	enableCache bool          // 是否启用缓存功能
 	cacheTTL    time.Duration // 缓存生存时间
 	redisAddr   string        // Redis服务器地址
@@ -34,7 +35,7 @@ type Config struct {
 
 	// 其他配置
 	maxCacheSize int // 内存缓存最大条目数
-	
+
 	// 动态引擎配置
 	dynamicConfig *DynamicConfig // 动态引擎配置选项
 }
@@ -108,28 +109,42 @@ func (c *Config) SetupDB() error {
 	return nil
 }
 
-// SetupCache 初始化缓存
+// SetupCache 初始化缓存 - 启动时确定唯一缓存策略
 func (c *Config) SetupCache() error {
 	if !c.enableCache {
+		c.cache = nil
 		return nil
 	}
 
+	// 如果已经手动设置了缓存实例，直接使用
 	if c.cache != nil {
 		return nil
 	}
 
+	// 启动时确定缓存策略，优先级：Redis > Memory > None
 	if c.redisAddr != "" {
+		// 尝试连接Redis
 		client := redis.NewClient(&redis.Options{
 			Addr:     c.redisAddr,
 			Password: c.redisPass,
 			DB:       c.redisDB,
 		})
+
+		// 测试Redis连接
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := client.Ping(ctx).Err(); err != nil {
+			// Redis连接失败，返回错误而不是降级
+			return fmt.Errorf("Redis连接失败: %w", err)
+		}
+
 		c.cache = NewRedisCache(client)
-	} else {
-		// 降级到内存缓存
-		c.cache = NewMemoryCache(c.maxCacheSize)
+		return nil
 	}
 
+	// 使用内存缓存
+	c.cache = NewMemoryCache(c.maxCacheSize)
 	return nil
 }
 
@@ -236,19 +251,19 @@ func WithDisableCache() Option {
 type DynamicConfig struct {
 	// 转换器配置
 	ConverterConfig ConverterConfig `json:"converter_config" yaml:"converter_config"`
-	
+
 	// 表达式解析器配置
 	ParserConfig ParserConfig `json:"parser_config" yaml:"parser_config"`
-	
+
 	// 缓存配置
 	CacheConfig DynamicCacheConfig `json:"cache_config" yaml:"cache_config"`
-	
+
 	// 验证器配置
 	ValidatorConfig ValidatorConfig `json:"validator_config" yaml:"validator_config"`
-	
+
 	// 执行配置
 	ExecutionConfig ExecutionConfig `json:"execution_config" yaml:"execution_config"`
-	
+
 	// 自定义函数配置
 	CustomFunctions map[string]interface{} `json:"custom_functions" yaml:"custom_functions"`
 }
@@ -257,16 +272,16 @@ type DynamicConfig struct {
 type ParserConfig struct {
 	// 默认语法类型
 	DefaultSyntax SyntaxType `json:"default_syntax" yaml:"default_syntax"`
-	
+
 	// 支持的语法类型
 	SupportedSyntax []SyntaxType `json:"supported_syntax" yaml:"supported_syntax"`
-	
+
 	// 自定义操作符映射
 	CustomOperators map[string]string `json:"custom_operators" yaml:"custom_operators"`
-	
+
 	// 自定义函数映射
 	CustomFunctionMappings map[string]string `json:"custom_function_mappings" yaml:"custom_function_mappings"`
-	
+
 	// 自定义关键字映射
 	CustomKeywords map[string]string `json:"custom_keywords" yaml:"custom_keywords"`
 }
@@ -275,16 +290,16 @@ type ParserConfig struct {
 type DynamicCacheConfig struct {
 	// 是否启用缓存
 	Enabled bool `json:"enabled" yaml:"enabled"`
-	
+
 	// 缓存大小限制
 	MaxSize int `json:"max_size" yaml:"max_size"`
-	
+
 	// 缓存TTL
 	TTL time.Duration `json:"ttl" yaml:"ttl"`
-	
+
 	// 是否启用LRU淘汰
 	EnableLRU bool `json:"enable_lru" yaml:"enable_lru"`
-	
+
 	// 缓存清理间隔
 	CleanupInterval time.Duration `json:"cleanup_interval" yaml:"cleanup_interval"`
 }
@@ -293,10 +308,10 @@ type DynamicCacheConfig struct {
 type ValidatorConfig struct {
 	// 是否启用验证
 	Enabled bool `json:"enabled" yaml:"enabled"`
-	
+
 	// 严格模式
 	StrictMode bool `json:"strict_mode" yaml:"strict_mode"`
-	
+
 	// 自定义验证规则
 	CustomValidators map[string]interface{} `json:"custom_validators" yaml:"custom_validators"`
 }
@@ -305,16 +320,16 @@ type ValidatorConfig struct {
 type ExecutionConfig struct {
 	// 是否启用并行执行
 	EnableParallel bool `json:"enable_parallel" yaml:"enable_parallel"`
-	
+
 	// 并发数量限制
 	MaxConcurrency int `json:"max_concurrency" yaml:"max_concurrency"`
-	
+
 	// 执行超时时间
 	ExecutionTimeout time.Duration `json:"execution_timeout" yaml:"execution_timeout"`
-	
+
 	// 是否启用规则优先级
 	EnablePriority bool `json:"enable_priority" yaml:"enable_priority"`
-	
+
 	// 最大规则数量限制
 	MaxRules int `json:"max_rules" yaml:"max_rules"`
 }
@@ -331,32 +346,32 @@ func DefaultDynamicConfig() *DynamicConfig {
 				"result":   "result",
 			},
 			OperatorMapping: map[string]string{
-				"==": "==",
-				"!=": "!=",
-				">":  ">",
-				"<":  "<",
-				">=": ">=",
-				"<=": "<=",
-				"and": "&&",
-				"or":  "||",
-				"not": "!",
+				"==":       "==",
+				"!=":       "!=",
+				">":        ">",
+				"<":        "<",
+				">=":       ">=",
+				"<=":       "<=",
+				"and":      "&&",
+				"or":       "||",
+				"not":      "!",
 				"in":       "Contains",
 				"contains": "Contains",
 				"matches":  "Matches",
 				"between":  "BETWEEN",
 			},
 			FunctionMapping: map[string]string{
-				"now":        "Now()",
-				"today":      "Today()",
-				"nowMillis":  "NowMillis()",
+				"now":          "Now()",
+				"today":        "Today()",
+				"nowMillis":    "NowMillis()",
 				"timeToMillis": "TimeToMillis",
 				"millisToTime": "MillisToTime",
-				"daysBetween": "DaysBetween",
-				"sum":        "Sum",
-				"avg":        "Avg",
-				"max":        "Max",
-				"min":        "Min",
-				"count":      "Count",
+				"daysBetween":  "DaysBetween",
+				"sum":          "Sum",
+				"avg":          "Avg",
+				"max":          "Max",
+				"min":          "Min",
+				"count":        "Count",
 			},
 			DefaultPriority: 50,
 			StrictMode:      false,

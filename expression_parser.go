@@ -51,45 +51,10 @@ func NewExpressionParser(syntax ...SyntaxType) ExpressionParser {
 	}
 	
 	parser := &DefaultExpressionParser{
-		syntax: syntaxType,
-		operators: map[string]string{
-			"等于":   "==",
-			"不等于": "!=",
-			"大于":   ">",
-			"小于":   "<",
-			"大于等于": ">=",
-			"小于等于": "<=",
-			"且":     "&&",
-			"并且":   "&&",
-			"和":     "&&",
-			"或":     "||",
-			"或者":   "||",
-			"非":     "!",
-			"不":     "!",
-			"包含":   "Contains",
-			"匹配":   "Matches",
-			"在":     "In",
-		},
-		functions: map[string]string{
-			"现在":   "Now()",
-			"今天":   "Today()",
-			"当前毫秒": "NowMillis()",
-			"毫秒时间戳": "NowMillis()",
-			"求和":   "Sum",
-			"平均":   "Avg",
-			"最大":   "Max",
-			"最小":   "Min",
-			"计数":   "Count",
-			"长度":   "Len",
-			"天数差": "DaysBetween",
-		},
-		keywords: map[string]string{
-			"如果":   "if",
-			"那么":   "then",
-			"否则":   "else",
-			"当":     "when",
-			"则":     "then",
-		},
+		syntax:    syntaxType,
+		operators: map[string]string{},
+		functions: map[string]string{},
+		keywords:  map[string]string{},
 	}
 	
 	return parser
@@ -277,19 +242,6 @@ func (p *DefaultExpressionParser) resolveTarget(target string) string {
 		return fmt.Sprintf("result[\"%s\"]", field)
 	}
 	
-	// 处理中文字段名映射
-	fieldMappings := map[string]string{
-		"结果.等级":   "result[\"level\"]",
-		"结果.折扣":   "result[\"discount\"]",
-		"结果.消息":   "result[\"message\"]",
-		"结果.状态":   "result[\"status\"]",
-		"结果.分数":   "result[\"score\"]",
-	}
-	
-	if mapped, ok := fieldMappings[target]; ok {
-		return mapped
-	}
-	
 	return target
 }
 
@@ -335,17 +287,10 @@ func (p *DefaultExpressionParser) isNumberLiteral(s string) bool {
 
 // isBooleanLiteral 检查是否是布尔字面量
 func (p *DefaultExpressionParser) isBooleanLiteral(s string) bool {
-	return s == "true" || s == "false" || s == "真" || s == "假"
+	return s == "true" || s == "false"
 }
 
 // normalizeBooleanLiteral 标准化布尔字面量
 func (p *DefaultExpressionParser) normalizeBooleanLiteral(s string) string {
-	switch s {
-	case "真":
-		return "true"
-	case "假":
-		return "false"
-	default:
-		return s
-	}
+	return s
 }

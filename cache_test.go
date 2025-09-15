@@ -68,40 +68,6 @@ func TestMemoryCache(t *testing.T) {
 	})
 }
 
-func TestCacheWrapper(t *testing.T) {
-	Convey("缓存包装器测试", t, func() {
-		primary := NewMemoryCache(10)
-		secondary := NewMemoryCache(10)
-		
-		wrapper := NewCacheWrapper(primary, secondary, nil)
-		defer wrapper.Close()
-		
-		Convey("正常读写", func() {
-			ctx := context.Background()
-			err := wrapper.Set(ctx, "key", []byte("value"), time.Minute)
-			So(err, ShouldBeNil)
-			
-			value, err := wrapper.Get(ctx, "key")
-			So(err, ShouldBeNil)
-			So(string(value), ShouldEqual, "value")
-		})
-		
-		Convey("主缓存失败降级", func() {
-			ctx := context.Background()
-			// 先设置数据
-			wrapper.Set(ctx, "key", []byte("value"), time.Minute)
-			
-			// 关闭主缓存模拟失败
-			primary.Close()
-			
-			// 应该能从备用缓存读取
-			value, err := wrapper.Get(ctx, "key")
-			So(err, ShouldBeNil)
-			So(string(value), ShouldEqual, "value")
-		})
-	})
-}
-
 func TestRuleCacheItem(t *testing.T) {
 	Convey("规则缓存项测试", t, func() {
 		rules := []*Rule{

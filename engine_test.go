@@ -9,13 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// noopLogger 实现Logger接口的空操作日志记录器
-type noopLogger struct{}
-
-func (n *noopLogger) Debugf(ctx context.Context, msg string, keyvals ...any) {}
-func (n *noopLogger) Infof(ctx context.Context, msg string, keyvals ...any)  {}
-func (n *noopLogger) Warnf(ctx context.Context, msg string, keyvals ...any)  {}
-func (n *noopLogger) Errorf(ctx context.Context, msg string, keyvals ...any) {}
 
 func TestEngine(t *testing.T) {
 	Convey("规则引擎测试", t, func() {
@@ -31,7 +24,7 @@ func TestEngine(t *testing.T) {
 			engine, err := New[map[string]any](
 				WithDB(db),
 				WithDisableCache(),
-				WithLogger(&noopLogger{}),
+				WithLogger(NewNoopLogger()),
 			)
 			So(err, ShouldBeNil)
 			So(engine, ShouldNotBeNil)
@@ -41,7 +34,7 @@ func TestEngine(t *testing.T) {
 			engine, err := New[map[string]any](
 				WithDB(db),
 				WithDisableCache(),
-				WithLogger(&noopLogger{}),
+				WithLogger(NewNoopLogger()),
 			)
 			So(err, ShouldBeNil)
 

@@ -81,6 +81,7 @@ type ruleMapperImpl struct {
 //
 //	db - GORM数据库连接实例
 //
+
 // 返回值:
 //
 //	RuleMapper - 规则数据访问接口

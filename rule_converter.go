@@ -269,7 +269,7 @@ func (c *GRLConverter) ConvertMetricRule(rule MetricRule) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("解析变量定义失败 (%s): %w", varName, err)
 		}
-		grl.WriteString(fmt.Sprintf("        var %s;\n", varDef))
+		grl.WriteString(fmt.Sprintf("        %s;\n", varDef))
 	}
 	
 	// 计算指标
