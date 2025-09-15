@@ -14,7 +14,7 @@ func TestMiscellaneousFunctions(t *testing.T) {
 
 		Convey("缓存键构建器", func() {
 			builder := CacheKeyBuilder{}
-			
+
 			Convey("MetaKey函数", func() {
 				metaKey := builder.MetaKey("test_meta")
 				So(metaKey, ShouldNotBeEmpty)
@@ -68,10 +68,10 @@ func TestMiscellaneousFunctions(t *testing.T) {
 		Convey("规则转换器未覆盖函数", func() {
 			converter := NewGRLConverter()
 
-			Convey("convertFromJSON函数", func() {
+			Convey("ConvertToGRL函数", func() {
 				// 测试从JSON转换
 				jsonStr := `{"when": "testdata.age >= 18", "then": {"result.adult": true}}`
-				_, err := converter.convertFromJSON(jsonStr)
+				_, err := converter.ConvertToGRL(jsonStr)
 				if err != nil {
 					// JSON转换可能失败
 					So(err, ShouldNotBeNil)

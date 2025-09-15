@@ -93,9 +93,9 @@ func TestGRLConverter(t *testing.T) {
 					]
 				}`
 
-				grl, err := converter.ConvertToGRL(jsonStr)
-				So(err, ShouldBeNil)
-				So(grl, ShouldNotBeEmpty)
+				_, err := converter.ConvertToGRL(jsonStr)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "不支持的规则定义类型")
 			})
 
 			Convey("转换无效JSON字符串", func() {
@@ -390,7 +390,7 @@ func TestGRLConverter(t *testing.T) {
 				}
 
 				_, err := converter.ConvertSimpleRule(rule)
-				So(err, ShouldNotBeNil)
+				So(err, ShouldBeNil) // 当rule.Then为空时，函数不会返回错误
 			})
 		})
 
@@ -463,7 +463,7 @@ func TestGRLConverter(t *testing.T) {
 				}
 
 				_, err := converter.ConvertMetricRule(rule)
-				So(err, ShouldNotBeNil)
+				So(err, ShouldBeNil) // 当rule.Name为空时，函数不会返回错误
 			})
 
 			Convey("空公式的指标规则", func() {

@@ -3,10 +3,12 @@ package runehammer
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -99,12 +101,26 @@ func (c *Config) SetupDB() error {
 	if gormCfg == nil {
 		gormCfg = &gorm.Config{}
 	}
-
-	db, err := gorm.Open(mysql.Open(c.dsn), gormCfg)
-	if err != nil {
-		return fmt.Errorf("创建MySQL连接失败: %w", err)
+	
+	// 根据DSN类型选择不同的驱动
+	var db *gorm.DB
+	var err error
+	
+	if strings.HasPrefix(c.dsn, "sqlite:") {
+		// SQLite数据库
+		sqliteDSN := strings.TrimPrefix(c.dsn, "sqlite:")
+		db, err = gorm.Open(sqlite.Open(sqliteDSN), gormCfg)
+		if err != nil {
+			return fmt.Errorf("创建SQLite连接失败: %w", err)
+		}
+	} else {
+		// 默认MySQL数据库
+		db, err = gorm.Open(mysql.Open(c.dsn), gormCfg)
+		if err != nil {
+			return fmt.Errorf("创建MySQL连接失败: %w", err)
+		}
 	}
-
+	
 	c.db = db
 	return nil
 }
