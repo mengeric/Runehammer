@@ -73,32 +73,6 @@ func TestGRLConverter(t *testing.T) {
 		Convey("ConvertToGRL 主转换方法", func() {
 			converter := NewGRLConverter()
 
-			Convey("转换map类型", func() {
-				mapData := map[string]interface{}{
-					"id":          "MAP_RULE",
-					"name":        "Map规则",
-					"description": "从Map转换的规则",
-					"priority":    80,
-					"conditions": map[string]interface{}{
-						"type":     "simple",
-						"left":     "amount",
-						"operator": ">",
-						"right":    1000,
-					},
-					"actions": []map[string]interface{}{
-						{
-							"type":   "assign",
-							"target": "result.status",
-							"value":  "approved",
-						},
-					},
-				}
-
-				grl, err := converter.ConvertToGRL(mapData)
-				So(err, ShouldBeNil)
-				So(grl, ShouldNotBeEmpty)
-			})
-
 			Convey("转换JSON字符串", func() {
 				jsonStr := `{
 					"id": "JSON_RULE",
@@ -210,6 +184,18 @@ func TestGRLConverter(t *testing.T) {
 				}
 
 				grl, err := converter.ConvertToGRL(unsupported)
+				So(err, ShouldNotBeNil)
+				So(grl, ShouldBeEmpty)
+				So(err.Error(), ShouldContainSubstring, "不支持的规则定义类型")
+			})
+
+			Convey("转换map类型应该失败", func() {
+				mapData := map[string]interface{}{
+					"id":   "MAP_RULE",
+					"name": "Map规则",
+				}
+
+				grl, err := converter.ConvertToGRL(mapData)
 				So(err, ShouldNotBeNil)
 				So(grl, ShouldBeEmpty)
 				So(err.Error(), ShouldContainSubstring, "不支持的规则定义类型")

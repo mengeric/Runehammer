@@ -143,10 +143,6 @@ func (c *GRLConverter) ConvertToGRL(definition interface{}) (string, error) {
 		// 转换完整的规则定义标准
 		return c.convertStandard(def)
 		
-	case map[string]interface{}:
-		// 从map转换
-		return c.convertFromMap(def)
-		
 	case string:
 		// 从JSON字符串转换
 		return c.convertFromJSON(def)
@@ -534,22 +530,6 @@ func (c *GRLConverter) convertStandard(standard RuleDefinitionStandard) (string,
 	}
 	
 	return strings.Join(allRules, "\n\n"), nil
-}
-
-// convertFromMap 从map转换
-func (c *GRLConverter) convertFromMap(data map[string]interface{}) (string, error) {
-	// 尝试转换为标准规则
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	
-	var rule StandardRule
-	if err := json.Unmarshal(jsonData, &rule); err != nil {
-		return "", err
-	}
-	
-	return c.ConvertRule(rule, Definitions{})
 }
 
 // convertFromJSON 从JSON转换

@@ -68,22 +68,6 @@ func TestMiscellaneousFunctions(t *testing.T) {
 		Convey("规则转换器未覆盖函数", func() {
 			converter := NewGRLConverter()
 
-			Convey("convertFromMap函数", func() {
-				// 测试从map转换
-				mapData := map[string]interface{}{
-					"when": "testdata.age >= 18",
-					"then": map[string]interface{}{
-						"result.adult": true,
-					},
-				}
-
-				_, err := converter.convertFromMap(mapData)
-				if err != nil {
-					// 某些转换可能会失败
-					So(err, ShouldNotBeNil)
-				}
-			})
-
 			Convey("convertFromJSON函数", func() {
 				// 测试从JSON转换
 				jsonStr := `{"when": "testdata.age >= 18", "then": {"result.adult": true}}`
