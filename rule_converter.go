@@ -62,7 +62,7 @@ func NewGRLConverter(config ...ConverterConfig) *GRLConverter {
 			"order":    "order",
 			"user":     "user",
 			"data":     "data",
-			"result":   "result",
+			"Result":   "Result",
 		},
 		OperatorMapping: map[string]string{
 			"==":       "==",
@@ -269,7 +269,7 @@ func (c *GRLConverter) ConvertMetricRule(rule MetricRule) (string, error) {
 		return "", fmt.Errorf("解析指标公式失败: %w", err)
 	}
 
-	grl.WriteString(fmt.Sprintf("        result[\"%s\"] = %s;\n", rule.Name, formula))
+	grl.WriteString(fmt.Sprintf("        Result[\"%s\"] = %s;\n", rule.Name, formula))
 
 	// 添加Retract
 	grl.WriteString(fmt.Sprintf("        Retract(\"%s\");\n", ruleName))
@@ -474,9 +474,9 @@ func (c *GRLConverter) convertValue(value interface{}) string {
 // resolveTarget 解析目标
 func (c *GRLConverter) resolveTarget(target string) string {
 	// 检查是否是结果字段
-	if strings.HasPrefix(target, "result.") {
-		field := strings.TrimPrefix(target, "result.")
-		return fmt.Sprintf("result[\"%s\"]", field)
+	if strings.HasPrefix(target, "Result.") {
+		field := strings.TrimPrefix(target, "Result.")
+		return fmt.Sprintf("Result[\"%s\"]", field)
 	}
 	return target
 }

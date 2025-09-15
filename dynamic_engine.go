@@ -272,7 +272,7 @@ func (e *DynamicEngine[T]) executeWithKnowledgeBase(
 	
 	// 创建结果容器，规则会向其中写入结果
 	resultMap := make(map[string]interface{})
-	if err := dataCtx.Add("result", resultMap); err != nil {
+	if err := dataCtx.Add("Result", resultMap); err != nil {
 		return zero, fmt.Errorf("创建结果容器失败: %w", err)
 	}
 	
@@ -362,10 +362,10 @@ func (e *DynamicEngine[T]) executeBatchParallel(
 // 返回值:
 //   error - 注入过程中的错误
 func (e *DynamicEngine[T]) injectInputData(dataCtx ast.IDataContext, input any) error {
-	// 首先初始化result变量作为一个空的map
+	// 首先初始化Result变量作为一个空的map
 	result := make(map[string]any)
-	if err := dataCtx.Add("result", result); err != nil {
-		return fmt.Errorf("注入result变量失败: %w", err)
+	if err := dataCtx.Add("Result", result); err != nil {
+		return fmt.Errorf("注入Result变量失败: %w", err)
 	}
 
 	v := reflect.ValueOf(input)
@@ -469,7 +469,7 @@ func (e *DynamicEngine[T]) extractResult(dataCtx ast.IDataContext) (T, error) {
 	var zero T
 	
 	// 获取结果变量
-	resultVar := dataCtx.Get("result")
+	resultVar := dataCtx.Get("Result")
 	if resultVar == nil {
 		return zero, fmt.Errorf("未找到结果变量")
 	}

@@ -41,14 +41,14 @@ func TestUniversalEngine(t *testing.T) {
 					ID:      1,
 					BizCode: "USER_VALIDATE",
 					Name:    "用户验证规则",
-					GRL:     `rule UserValidation "用户验证" { when Params.age >= 18 then result["adult"] = true; result["eligible"] = Params.age >= 21; }`,
+					GRL:     `rule UserValidation "用户验证" { when userinput.Age >= 18 then Result["Adult"] = true; Result["Eligible"] = userinput.Age >= 21; }`,
 					Enabled: true,
 				},
 				{
 					ID:      2,
 					BizCode: "ORDER_PROCESS",
 					Name:    "订单处理规则",
-					GRL:     `rule OrderProcess "订单处理" { when Params.vip == true then result["discount"] = 0.1; result["status"] = "VIP"; }`,
+					GRL:     `rule OrderProcess "订单处理" { when userinput.VIP == true then Result["Discount"] = 0.1; Result["Status"] = "VIP"; }`,
 					Enabled: true,
 				},
 			}
@@ -73,21 +73,21 @@ func TestUniversalEngine(t *testing.T) {
 			}
 			
 			Convey("测试原始执行功能", func() {
-				input := map[string]interface{}{"age": 25, "income": 50000, "vip": true}
+				input := UserInput{Age: 25, Income: 50000, VIP: true}
 				
 				// 执行用户验证规则
 				result, err := baseEngine.ExecRaw(context.Background(), "USER_VALIDATE", input)
 				So(err, ShouldBeNil)
 				So(result, ShouldNotBeNil)
-				So(result["adult"], ShouldEqual, true)
-				So(result["eligible"], ShouldEqual, true)
+				So(result["Adult"], ShouldEqual, true)
+				So(result["Eligible"], ShouldEqual, true)
 			})
 			
 			Convey("测试TypedEngine - UserResult", func() {
 				// 创建用户结果类型的引擎
 				userEngine := NewTypedEngine[UserResult](baseEngine)
 				
-				input := map[string]interface{}{"age": 19, "income": 30000, "vip": false}
+				input := UserInput{Age: 19, Income: 30000, VIP: false}
 				result, err := userEngine.Exec(context.Background(), "USER_VALIDATE", input)
 				
 				So(err, ShouldBeNil)
@@ -99,7 +99,7 @@ func TestUniversalEngine(t *testing.T) {
 				// 创建订单结果类型的引擎
 				orderEngine := NewTypedEngine[OrderResult](baseEngine)
 				
-				input := map[string]interface{}{"age": 30, "income": 80000, "vip": true}
+				input := UserInput{Age: 30, Income: 80000, VIP: true}
 				result, err := orderEngine.Exec(context.Background(), "ORDER_PROCESS", input)
 				
 				So(err, ShouldBeNil)
@@ -113,7 +113,7 @@ func TestUniversalEngine(t *testing.T) {
 				orderEngine := NewTypedEngine[OrderResult](baseEngine)
 				mapEngine := NewTypedEngine[map[string]interface{}](baseEngine)
 				
-				input := map[string]interface{}{"age": 22, "income": 60000, "vip": true}
+				input := UserInput{Age: 22, Income: 60000, VIP: true}
 				
 				// 用户验证
 				userResult, err := userEngine.Exec(context.Background(), "USER_VALIDATE", input)
@@ -141,7 +141,7 @@ func TestUniversalEngine(t *testing.T) {
 				}
 				
 				complexEngine := NewTypedEngine[ComplexStruct](baseEngine)
-				input := map[string]interface{}{"age": 25, "income": 50000, "vip": true}
+				input := UserInput{Age: 25, Income: 50000, VIP: true}
 				
 				result, err := complexEngine.Exec(context.Background(), "USER_VALIDATE", input)
 				// 应该能转换成功，因为Channel字段会被忽略
@@ -160,7 +160,7 @@ func TestUniversalEngine(t *testing.T) {
 					ID:      1,
 					BizCode: "PERF_TEST",
 					Name:    "性能测试规则",
-					GRL:     `rule PerfTest "性能测试" { when Params.age >= 18 then result["adult"] = true; result["score"] = Params.age * 2; }`,
+					GRL:     `rule PerfTest "性能测试" { when userinput.Age >= 18 then Result["Adult"] = true; Result["Score"] = userinput.Age * 2; }`,
 					Enabled: true,
 				},
 			}
@@ -212,7 +212,7 @@ func TestUniversalEngine(t *testing.T) {
 			universalUserEngine := NewTypedEngine[UserResult](baseEngine)
 			universalMapEngine := NewTypedEngine[map[string]interface{}](baseEngine)
 			
-			input := map[string]interface{}{"age": 25, "income": 50000, "vip": true}
+			input := UserInput{Age: 25, Income: 50000, VIP: true}
 			ctx := context.Background()
 			
 			Convey("验证结果一致性", func() {

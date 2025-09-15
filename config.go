@@ -359,7 +359,7 @@ func DefaultDynamicConfig() *DynamicConfig {
 				"order":    "order",
 				"user":     "user",
 				"data":     "data",
-				"result":   "result",
+				"Result":   "Result",
 			},
 			OperatorMapping: map[string]string{
 				"==":       "==",

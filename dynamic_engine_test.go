@@ -62,8 +62,8 @@ func TestDynamicEngine(t *testing.T) {
 			simpleRule := SimpleRule{
 				When: "testinput.Customer.Age >= 18",
 				Then: map[string]string{
-					"result.eligible": "true",
-					"result.message":  "\"符合条件\"",
+					"Result.Eligible": "true",
+					"Result.Message":  "\"符合条件\"",
 				},
 			}
 
@@ -81,8 +81,8 @@ func TestDynamicEngine(t *testing.T) {
 			So(result, ShouldNotBeNil)
 
 			// 验证结果
-			So(result["eligible"], ShouldEqual, true)
-			So(result["message"], ShouldEqual, "符合条件")
+			So(result["Eligible"], ShouldEqual, true)
+			So(result["Message"], ShouldEqual, "符合条件")
 		})
 
 		Convey("执行指标规则", func() {
@@ -110,7 +110,7 @@ func TestDynamicEngine(t *testing.T) {
 			result, err := engine.ExecuteRuleDefinition(context.Background(), metricRule, input)
 			So(err, ShouldBeNil)
 			So(result, ShouldNotBeNil)
-			So(result["customer_score"], ShouldNotBeNil)
+			So(result["CustomerScore"], ShouldNotBeNil)
 		})
 
 		Convey("执行标准规则", func() {
@@ -130,12 +130,12 @@ func TestDynamicEngine(t *testing.T) {
 				Actions: []Action{
 					{
 						Type:   "assign",
-						Target: "result.is_vip",
+						Target: "Result.IsVip",
 						Value:  true,
 					},
 					{
 						Type:   "assign",
-						Target: "result.vip_benefits",
+						Target: "Result.VipBenefits",
 						Value:  []string{"专属客服", "优先放款"},
 					},
 				},
@@ -150,7 +150,7 @@ func TestDynamicEngine(t *testing.T) {
 			result, err := engine.ExecuteRuleDefinition(context.Background(), standardRule, input)
 			So(err, ShouldBeNil)
 			So(result, ShouldNotBeNil)
-			So(result["is_vip"], ShouldEqual, true)
+			So(result["IsVip"], ShouldEqual, true)
 		})
 
 		Convey("批量执行规则", func() {
@@ -158,7 +158,7 @@ func TestDynamicEngine(t *testing.T) {
 				SimpleRule{
 					When: "testinput.Order.Amount > 500",
 					Then: map[string]string{
-						"result.free_shipping": "true",
+						"Result.FreeShipping": "true",
 					},
 				},
 				MetricRule{
@@ -182,8 +182,8 @@ func TestDynamicEngine(t *testing.T) {
 			results, err := engine.ExecuteBatch(context.Background(), rules, input)
 			So(err, ShouldBeNil)
 			So(len(results), ShouldEqual, 2)
-			So(results[0]["free_shipping"], ShouldEqual, true)
-			So(results[1]["loyalty_score"], ShouldNotBeNil)
+			So(results[0]["FreeShipping"], ShouldEqual, true)
+			So(results[1]["LoyaltyScore"], ShouldNotBeNil)
 		})
 
 		Convey("自定义函数注册", func() {
@@ -202,7 +202,7 @@ func TestDynamicEngine(t *testing.T) {
 			rule := SimpleRule{
 				When: "ValidateAge(testinput.Customer.Age)",
 				Then: map[string]string{
-					"result.discount": "CalculateDiscount(testinput.Order.Amount, 0.1)",
+					"Result.Discount": "CalculateDiscount(testinput.Order.Amount, 0.1)",
 				},
 			}
 
@@ -218,7 +218,7 @@ func TestDynamicEngine(t *testing.T) {
 			result, err := engine.ExecuteRuleDefinition(context.Background(), rule, input)
 			So(err, ShouldBeNil)
 			So(result, ShouldNotBeNil)
-			So(result["discount"], ShouldEqual, 10.0)
+			So(result["Discount"], ShouldEqual, 10.0)
 		})
 
 		Convey("错误处理", func() {
@@ -226,7 +226,7 @@ func TestDynamicEngine(t *testing.T) {
 				invalidRule := SimpleRule{
 					When: "invalid syntax here",
 					Then: map[string]string{
-						"result.test": "true",
+						"Result.Test": "true",
 					},
 				}
 
@@ -250,7 +250,7 @@ func TestDynamicEngine(t *testing.T) {
 				rule := SimpleRule{
 					When: "true",
 					Then: map[string]string{
-						"result.test": "true",
+						"Result.Test": "true",
 					},
 				}
 
@@ -271,7 +271,7 @@ func TestDynamicEngine(t *testing.T) {
 				timeoutRule := SimpleRule{
 					When: "testinput.Customer.Age >= 0", // 简单条件
 					Then: map[string]string{
-						"result.processed": "true",
+						"Result.Processed": "true",
 					},
 				}
 
@@ -292,7 +292,7 @@ func TestDynamicEngine(t *testing.T) {
 				// 测试验证器生效
 				invalidRule := SimpleRule{
 					When: "", // 空条件应该触发验证错误
-					Then: map[string]string{"result.test": "true"},
+					Then: map[string]string{"Result.Test": "true"},
 				}
 
 				input := TestInput{Customer: TestCustomer{Age: 25}}
@@ -311,7 +311,7 @@ func TestDynamicEngine(t *testing.T) {
 				// 先执行一个规则来填充缓存
 				rule := SimpleRule{
 					When: "testinput.Customer.Age >= 18",
-					Then: map[string]string{"result.cached": "true"},
+					Then: map[string]string{"Result.Cached": "true"},
 				}
 				input := TestInput{Customer: TestCustomer{Age: 25}}
 				
@@ -345,11 +345,11 @@ func TestDynamicEngine(t *testing.T) {
 				rules := []interface{}{
 					SimpleRule{
 						When: "testinput.Customer.Age >= 18",
-						Then: map[string]string{"result.adult": "true"},
+						Then: map[string]string{"Result.Adult": "true"},
 					},
 					SimpleRule{
 						When: "testinput.Order.Amount > 100",
-						Then: map[string]string{"result.high_value": "true"},
+						Then: map[string]string{"Result.HighValue": "true"},
 					},
 				}
 
@@ -361,8 +361,8 @@ func TestDynamicEngine(t *testing.T) {
 				results, err := seqEngine.ExecuteBatch(context.Background(), rules, input)
 				So(err, ShouldBeNil)
 				So(len(results), ShouldEqual, 2)
-				So(results[0]["adult"], ShouldEqual, true)
-				So(results[1]["high_value"], ShouldEqual, true)
+				So(results[0]["Adult"], ShouldEqual, true)
+				So(results[1]["HighValue"], ShouldEqual, true)
 			})
 		})
 
@@ -370,24 +370,24 @@ func TestDynamicEngine(t *testing.T) {
 			Convey("非结构体类型数据注入", func() {
 				rule := SimpleRule{
 					When: "Params > 100", // 对于非结构体类型，使用 Params 访问
-					Then: map[string]string{"result.large": "true"},
+					Then: map[string]string{"Result.Large": "true"},
 				}
 
 				// 使用基本类型
 				result, err := engine.ExecuteRuleDefinition(context.Background(), rule, 150)
 				So(err, ShouldBeNil)
-				So(result["large"], ShouldEqual, true)
+				So(result["Large"], ShouldEqual, true)
 			})
 
 			Convey("字符串类型数据注入", func() {
 				rule := SimpleRule{
 					When: "Params == \"test\"",
-					Then: map[string]string{"result.matched": "true"},
+					Then: map[string]string{"Result.Matched": "true"},
 				}
 
 				result, err := engine.ExecuteRuleDefinition(context.Background(), rule, "test")
 				So(err, ShouldBeNil)
-				So(result["matched"], ShouldEqual, true)
+				So(result["Matched"], ShouldEqual, true)
 			})
 		})
 	})

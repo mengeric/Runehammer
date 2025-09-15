@@ -27,10 +27,10 @@ import (
 // 返回值:
 //   error - 注入过程中的错误
 func (e *engineImpl[T]) injectInputData(dataCtx ast.IDataContext, input any) error {
-	// 首先初始化result变量作为一个空的map
+	// 首先初始化Result变量作为一个空的map
 	result := make(map[string]any)
-	if err := dataCtx.Add("result", result); err != nil {
-		return fmt.Errorf("注入result变量失败: %w", err)
+	if err := dataCtx.Add("Result", result); err != nil {
+		return fmt.Errorf("注入Result变量失败: %w", err)
 	}
 
 	v := reflect.ValueOf(input)
@@ -44,21 +44,12 @@ func (e *engineImpl[T]) injectInputData(dataCtx ast.IDataContext, input any) err
 
 	switch v.Kind() {
 	case reflect.Map:
-		return e.injectMapData(dataCtx, v)
+		return fmt.Errorf("不支持 map 类型，请使用结构体替代")
 	case reflect.Struct:
 		return e.injectStructData(dataCtx, input, t)
 	default:
 		return e.injectDefaultData(dataCtx, input)
 	}
-}
-
-// injectMapData 注入Map类型数据 - 将整个map作为Params变量注入
-func (e *engineImpl[T]) injectMapData(dataCtx ast.IDataContext, v reflect.Value) error {
-	// 将整个map作为Params注入
-	if err := dataCtx.Add("Params", v.Interface()); err != nil {
-		return fmt.Errorf("注入Params变量失败: %w", err)
-	}
-	return nil
 }
 
 // injectStructData 注入结构体数据 - 将整个结构体作为单个对象注入
@@ -101,8 +92,8 @@ func (e *engineImpl[T]) injectDefaultData(dataCtx ast.IDataContext, input any) e
 func (e *engineImpl[T]) extractResult(dataCtx ast.IDataContext) (T, error) {
 	var zero T
 
-	// 获取result变量
-	resultValue := dataCtx.Get("result")
+	// 获取Result变量
+	resultValue := dataCtx.Get("Result")
 	if resultValue == nil {
 		// 如果规则没有设置result变量，返回零值
 		return zero, nil

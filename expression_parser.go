@@ -237,9 +237,9 @@ func (p *DefaultExpressionParser) parseTernaryOperator(expr string) string {
 // resolveTarget 解析目标字段
 func (p *DefaultExpressionParser) resolveTarget(target string) string {
 	// 处理结果字段
-	if strings.HasPrefix(target, "result.") {
-		field := strings.TrimPrefix(target, "result.")
-		return fmt.Sprintf("result[\"%s\"]", field)
+	if strings.HasPrefix(target, "Result.") {
+		field := strings.TrimPrefix(target, "Result.")
+		return fmt.Sprintf("Result[\"%s\"]", field)
 	}
 	
 	return target
