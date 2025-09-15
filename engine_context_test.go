@@ -386,3 +386,225 @@ func TestEngineContext(t *testing.T) {
 		})
 	})
 }
+
+// TestExtractResultFunctions 专门测试结果提取相关函数
+func TestExtractResultFunctions(t *testing.T) {
+	Convey("结果提取函数详细测试", t, func() {
+		// 创建测试用的引擎实例
+		config := DefaultConfig()
+		mapper := newMockRuleMapper()
+		cache := newMockCache()
+		cacheKeys := newMockCacheKeyBuilder()
+		logger := NewNoopLogger()
+		knowledgeLibrary := ast.NewKnowledgeLibrary()
+		cronScheduler := cron.New()
+
+		Convey("extractInterfaceResult 函数", func() {
+			// 创建 interface{} 类型引擎
+			interfaceEngine := NewEngineImpl[any](
+				config, mapper, cache, cacheKeys, logger,
+				knowledgeLibrary, &sync.Map{}, cronScheduler, false,
+			)
+
+			Convey("正常值提取", func() {
+				testValues := []interface{}{
+					"string value",
+					42,
+					true,
+					map[string]interface{}{"key": "value"},
+					[]int{1, 2, 3},
+				}
+
+				for _, testValue := range testValues {
+					result, err := interfaceEngine.extractInterfaceResult(testValue)
+					So(err, ShouldBeNil)
+					So(result, ShouldEqual, testValue)
+				}
+			})
+
+			Convey("nil值处理", func() {
+				result, err := interfaceEngine.extractInterfaceResult(nil)
+				So(err, ShouldBeNil)
+				So(result, ShouldBeNil)
+			})
+		})
+
+		Convey("extractMapResult 函数", func() {
+			// 创建 map 类型引擎
+			mapEngine := NewEngineImpl[map[string]any](
+				config, mapper, cache, cacheKeys, logger,
+				knowledgeLibrary, &sync.Map{}, cronScheduler, false,
+			)
+
+			Convey("有效map提取", func() {
+				testMap := map[string]any{
+					"key1":   "value1",
+					"key2":   42,
+					"key3":   true,
+					"nested": map[string]any{"inner": "value"},
+				}
+
+				result, err := mapEngine.extractMapResult(testMap)
+				So(err, ShouldBeNil)
+				So(result, ShouldNotBeNil)
+				So(result["key1"], ShouldEqual, "value1")
+				So(result["key2"], ShouldEqual, 42)
+				So(result["key3"], ShouldEqual, true)
+
+				nested, ok := result["nested"].(map[string]any)
+				So(ok, ShouldBeTrue)
+				So(nested["inner"], ShouldEqual, "value")
+			})
+
+			Convey("空map提取", func() {
+				emptyMap := map[string]any{}
+				result, err := mapEngine.extractMapResult(emptyMap)
+				So(err, ShouldBeNil)
+				So(result, ShouldNotBeNil)
+				So(len(result), ShouldEqual, 0)
+			})
+
+			Convey("非map类型错误", func() {
+				invalidTypes := []interface{}{
+					"not a map",
+					42,
+					[]string{"array"},
+					struct{ field string }{"value"},
+				}
+
+				for _, invalidType := range invalidTypes {
+					_, err := mapEngine.extractMapResult(invalidType)
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, "不是有效的map类型")
+				}
+			})
+		})
+
+		Convey("extractPointerResult 函数", func() {
+			type TestStruct struct {
+				Name  string
+				Value int
+			}
+
+			// 创建指针类型引擎
+			ptrEngine := NewEngineImpl[*TestStruct](
+				config, mapper, cache, cacheKeys, logger,
+				knowledgeLibrary, &sync.Map{}, cronScheduler, false,
+			)
+
+			Convey("有效指针提取", func() {
+				testData := &TestStruct{
+					Name:  "test name",
+					Value: 123,
+				}
+
+				result, err := ptrEngine.extractPointerResult(testData)
+				So(err, ShouldBeNil)
+				So(result, ShouldNotBeNil)
+				So(result.Name, ShouldEqual, "test name")
+				So(result.Value, ShouldEqual, 123)
+			})
+
+			Convey("nil指针提取", func() {
+				var nilPtr *TestStruct = nil
+				result, err := ptrEngine.extractPointerResult(nilPtr)
+				So(err, ShouldBeNil)
+				So(result, ShouldBeNil)
+			})
+		})
+
+		Convey("extractGenericResult 函数", func() {
+			type GenericStruct struct {
+				Message string `json:"message"`
+				Code    int    `json:"code"`
+				Active  bool   `json:"active"`
+			}
+
+			// 创建泛型结构体引擎
+			genericEngine := NewEngineImpl[GenericStruct](
+				config, mapper, cache, cacheKeys, logger,
+				knowledgeLibrary, &sync.Map{}, cronScheduler, false,
+			)
+
+			Convey("有效数据转换", func() {
+				inputData := map[string]interface{}{
+					"message": "success",
+					"code":    200,
+					"active":  true,
+				}
+
+				result, err := genericEngine.extractGenericResult(inputData)
+				So(err, ShouldBeNil)
+				So(result.Message, ShouldEqual, "success")
+				So(result.Code, ShouldEqual, 200)
+				So(result.Active, ShouldEqual, true)
+			})
+
+			Convey("部分字段数据", func() {
+				inputData := map[string]interface{}{
+					"message": "partial data",
+					// 缺少 code 和 active 字段
+				}
+
+				result, err := genericEngine.extractGenericResult(inputData)
+				So(err, ShouldBeNil)
+				So(result.Message, ShouldEqual, "partial data")
+				So(result.Code, ShouldEqual, 0)     // 默认值
+				So(result.Active, ShouldEqual, false) // 默认值
+			})
+
+			Convey("类型不匹配处理", func() {
+				inputData := map[string]interface{}{
+					"message": 123,    // 应该是string
+					"code":    "text", // 应该是int
+					"active":  "yes",  // 应该是bool
+				}
+
+				// JSON序列化/反序列化会尽力转换类型，某些可能失败
+				_, err := genericEngine.extractGenericResult(inputData)
+				So(err, ShouldNotBeNil) // 类型不匹配应该出错
+			})
+
+			Convey("无法序列化的数据", func() {
+				// channel 类型无法序列化为JSON
+				invalidData := make(chan int)
+
+				_, err := genericEngine.extractGenericResult(invalidData)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "序列化结果失败")
+			})
+
+			Convey("循环引用数据", func() {
+				// 创建循环引用的map
+				cyclicMap := make(map[string]interface{})
+				cyclicMap["self"] = cyclicMap
+
+				_, err := genericEngine.extractGenericResult(cyclicMap)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "序列化结果失败")
+			})
+		})
+
+		Convey("完整结果提取流程", func() {
+			// 测试 extractResult 主函数
+			engine := NewEngineImpl[map[string]any](
+				config, mapper, cache, cacheKeys, logger,
+				knowledgeLibrary, &sync.Map{}, cronScheduler, false,
+			)
+
+			Convey("result变量为nil", func() {
+				dataCtx := ast.NewDataContext()
+				// 不添加result变量
+
+				result, err := engine.extractResult(dataCtx)
+				So(err, ShouldBeNil)
+				So(result, ShouldNotBeNil) // 应该返回零值，而不是nil
+			})
+
+			Convey("result变量获取失败", func() {
+				// 这个测试比较难模拟，因为需要mock Grule的内部行为
+				// 在实际情况下，GetValue()失败的情况比较少见
+			})
+		})
+	})
+}

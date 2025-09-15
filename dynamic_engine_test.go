@@ -27,6 +27,21 @@ type TestInput struct {
 	Order    TestOrder    `json:"order"`
 }
 
+// testValidator 实现 RuleValidator 接口的测试验证器
+type testValidator struct{}
+
+func (tv *testValidator) Validate(definition interface{}) []ValidationError {
+	if sr, ok := definition.(SimpleRule); ok && sr.When == "" {
+		return []ValidationError{
+			{
+				Message: "规则条件不能为空",
+				Field:   "When",
+			},
+		}
+	}
+	return nil
+}
+
 // TestDynamicEngine 测试动态引擎 - 使用结构体类型
 func TestDynamicEngine(t *testing.T) {
 	Convey("动态规则引擎测试", t, func() {
@@ -247,6 +262,132 @@ func TestDynamicEngine(t *testing.T) {
 				_, err := engine.ExecuteRuleDefinition(context.Background(), rule, mapInput)
 				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldContainSubstring, "不支持 map 类型")
+			})
+		})
+
+		Convey("引擎管理功能", func() {
+			Convey("超时执行", func() {
+				// 创建一个会超时的规则
+				timeoutRule := SimpleRule{
+					When: "testinput.Customer.Age >= 0", // 简单条件
+					Then: map[string]string{
+						"result.processed": "true",
+					},
+				}
+
+				input := TestInput{
+					Customer: TestCustomer{Age: 25},
+				}
+
+				// 使用很短的超时时间
+				_, err := engine.ExecuteWithTimeout(context.Background(), timeoutRule, input, 1*time.Nanosecond)
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("注册验证器", func() {
+				// 创建一个实现 RuleValidator 接口的验证器
+				validator := &testValidator{}
+				engine.RegisterValidator(validator)
+
+				// 测试验证器生效
+				invalidRule := SimpleRule{
+					When: "", // 空条件应该触发验证错误
+					Then: map[string]string{"result.test": "true"},
+				}
+
+				input := TestInput{Customer: TestCustomer{Age: 25}}
+				_, err := engine.ExecuteRuleDefinition(context.Background(), invalidRule, input)
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("设置日志器", func() {
+				logger := NewNoopLogger()
+				engine.SetLogger(logger)
+				// 验证日志器设置成功（通过后续操作不出错来验证）
+				So(func() { engine.SetLogger(logger) }, ShouldNotPanic)
+			})
+
+			Convey("缓存管理", func() {
+				// 先执行一个规则来填充缓存
+				rule := SimpleRule{
+					When: "testinput.Customer.Age >= 18",
+					Then: map[string]string{"result.cached": "true"},
+				}
+				input := TestInput{Customer: TestCustomer{Age: 25}}
+				
+				_, err := engine.ExecuteRuleDefinition(context.Background(), rule, input)
+				So(err, ShouldBeNil)
+
+				// 获取缓存统计
+				stats := engine.GetCacheStats()
+				So(stats, ShouldNotBeNil)
+				
+				// 清理缓存
+				engine.ClearCache()
+				
+				// 再次获取统计，应该显示缓存已清空
+				statsAfterClear := engine.GetCacheStats()
+				So(statsAfterClear, ShouldNotBeNil)
+			})
+		})
+
+		Convey("批量执行模式", func() {
+			Convey("顺序执行批量规则", func() {
+				// 创建不支持并行的引擎
+				seqEngine := NewDynamicEngine[map[string]interface{}](
+					DynamicEngineConfig{
+						EnableCache:       true,
+						ParallelExecution: false, // 关闭并行执行
+						DefaultTimeout:    10 * time.Second,
+					},
+				)
+
+				rules := []interface{}{
+					SimpleRule{
+						When: "testinput.Customer.Age >= 18",
+						Then: map[string]string{"result.adult": "true"},
+					},
+					SimpleRule{
+						When: "testinput.Order.Amount > 100",
+						Then: map[string]string{"result.high_value": "true"},
+					},
+				}
+
+				input := TestInput{
+					Customer: TestCustomer{Age: 25},
+					Order:    TestOrder{Amount: 150.0},
+				}
+
+				results, err := seqEngine.ExecuteBatch(context.Background(), rules, input)
+				So(err, ShouldBeNil)
+				So(len(results), ShouldEqual, 2)
+				So(results[0]["adult"], ShouldEqual, true)
+				So(results[1]["high_value"], ShouldEqual, true)
+			})
+		})
+
+		Convey("数据注入测试", func() {
+			Convey("非结构体类型数据注入", func() {
+				rule := SimpleRule{
+					When: "Params > 100", // 对于非结构体类型，使用 Params 访问
+					Then: map[string]string{"result.large": "true"},
+				}
+
+				// 使用基本类型
+				result, err := engine.ExecuteRuleDefinition(context.Background(), rule, 150)
+				So(err, ShouldBeNil)
+				So(result["large"], ShouldEqual, true)
+			})
+
+			Convey("字符串类型数据注入", func() {
+				rule := SimpleRule{
+					When: "Params == \"test\"",
+					Then: map[string]string{"result.matched": "true"},
+				}
+
+				result, err := engine.ExecuteRuleDefinition(context.Background(), rule, "test")
+				So(err, ShouldBeNil)
+				So(result["matched"], ShouldEqual, true)
 			})
 		})
 	})
