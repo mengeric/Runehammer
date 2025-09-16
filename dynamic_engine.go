@@ -22,23 +22,23 @@ import (
 
 // DynamicEngine 动态规则引擎
 type DynamicEngine[T any] struct {
-	converter        RuleConverter             // 规则转换器
-	knowledgeLibrary *ast.KnowledgeLibrary     // Grule知识库
-	customFunctions  map[string]interface{}    // 自定义函数库
-	validators       []RuleValidator           // 规则验证器
-	logger           Logger                    // 日志记录器
-	cache            *DynamicRuleCache         // 规则缓存（可选）
-	config           DynamicEngineConfig       // 引擎配置
+	converter        RuleConverter          // 规则转换器
+	knowledgeLibrary *ast.KnowledgeLibrary  // Grule知识库
+	customFunctions  map[string]interface{} // 自定义函数库
+	validators       []RuleValidator        // 规则验证器
+	logger           Logger                 // 日志记录器
+	cache            *DynamicRuleCache      // 规则缓存（可选）
+	config           DynamicEngineConfig    // 引擎配置
 }
 
 // DynamicEngineConfig 动态引擎配置
 type DynamicEngineConfig struct {
-	EnableCache     bool          // 是否启用缓存
-	CacheTTL        time.Duration // 缓存过期时间
-	MaxCacheSize    int           // 最大缓存大小
-	StrictValidation bool          // 是否严格验证
-	ParallelExecution bool         // 是否支持并行执行
-	DefaultTimeout   time.Duration // 默认超时时间
+	EnableCache       bool          // 是否启用缓存
+	CacheTTL          time.Duration // 缓存过期时间
+	MaxCacheSize      int           // 最大缓存大小
+	StrictValidation  bool          // 是否严格验证
+	ParallelExecution bool          // 是否支持并行执行
+	DefaultTimeout    time.Duration // 默认超时时间
 }
 
 // RuleValidator 规则验证器接口
@@ -48,11 +48,11 @@ type RuleValidator interface {
 
 // DynamicRuleCache 动态规则缓存
 type DynamicRuleCache struct {
-	cache     map[string]*CachedRule
-	mu        sync.RWMutex
-	ttl       time.Duration
-	maxSize   int
-	size      int
+	cache   map[string]*CachedRule
+	mu      sync.RWMutex
+	ttl     time.Duration
+	maxSize int
+	size    int
 }
 
 // CachedRule 缓存的规则
@@ -67,18 +67,18 @@ type CachedRule struct {
 func NewDynamicEngine[T any](config ...DynamicEngineConfig) *DynamicEngine[T] {
 	// 默认配置
 	defaultConfig := DynamicEngineConfig{
-		EnableCache:      true,
-		CacheTTL:         30 * time.Minute,
-		MaxCacheSize:     1000,
-		StrictValidation: false,
+		EnableCache:       true,
+		CacheTTL:          30 * time.Minute,
+		MaxCacheSize:      1000,
+		StrictValidation:  false,
 		ParallelExecution: true,
-		DefaultTimeout:   30 * time.Second,
+		DefaultTimeout:    30 * time.Second,
 	}
-	
+
 	if len(config) > 0 {
 		defaultConfig = config[0]
 	}
-	
+
 	engine := &DynamicEngine[T]{
 		converter:        NewGRLConverter(),
 		knowledgeLibrary: ast.NewKnowledgeLibrary(),
@@ -86,12 +86,12 @@ func NewDynamicEngine[T any](config ...DynamicEngineConfig) *DynamicEngine[T] {
 		validators:       []RuleValidator{},
 		config:           defaultConfig,
 	}
-	
+
 	// 初始化缓存
 	if defaultConfig.EnableCache {
 		engine.cache = NewDynamicRuleCache(defaultConfig.CacheTTL, defaultConfig.MaxCacheSize)
 	}
-	
+
 	return engine
 }
 
@@ -102,21 +102,21 @@ func (e *DynamicEngine[T]) ExecuteRuleDefinition(
 	input any,
 ) (T, error) {
 	var zero T
-	
+
 	// 1. 验证规则定义
 	if e.config.StrictValidation {
 		if err := e.validateRuleDefinition(definition); err != nil {
 			return zero, fmt.Errorf("规则验证失败: %w", err)
 		}
 	}
-	
+
 	// 2. 生成规则hash用于缓存
 	ruleHash := e.calculateRuleHash(definition)
-	
+
 	// 3. 检查缓存
 	var knowledgeBase *ast.KnowledgeBase
 	var err error
-	
+
 	if e.cache != nil {
 		if cached := e.cache.Get(ruleHash); cached != nil {
 			knowledgeBase = cached.KB
@@ -126,7 +126,7 @@ func (e *DynamicEngine[T]) ExecuteRuleDefinition(
 			}
 		}
 	}
-	
+
 	// 4. 如果缓存未命中，编译规则
 	if knowledgeBase == nil {
 		// 转换为GRL
@@ -134,13 +134,13 @@ func (e *DynamicEngine[T]) ExecuteRuleDefinition(
 		if convErr != nil {
 			return zero, fmt.Errorf("规则转换失败: %w", convErr)
 		}
-		
+
 		// 编译GRL
 		knowledgeBase, err = e.compileGRL(grl, ruleHash)
 		if err != nil {
 			return zero, fmt.Errorf("规则编译失败: %w", err)
 		}
-		
+
 		// 存入缓存
 		if e.cache != nil {
 			e.cache.Set(ruleHash, &CachedRule{
@@ -151,7 +151,7 @@ func (e *DynamicEngine[T]) ExecuteRuleDefinition(
 			})
 		}
 	}
-	
+
 	// 5. 执行规则
 	return e.executeWithKnowledgeBase(ctx, knowledgeBase, input)
 }
@@ -165,7 +165,7 @@ func (e *DynamicEngine[T]) ExecuteBatch(
 	if !e.config.ParallelExecution {
 		return e.executeBatchSequential(ctx, definitions, input)
 	}
-	
+
 	return e.executeBatchParallel(ctx, definitions, input)
 }
 
@@ -179,10 +179,10 @@ func (e *DynamicEngine[T]) ExecuteWithTimeout(
 	if timeout == 0 {
 		timeout = e.config.DefaultTimeout
 	}
-	
+
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	
+
 	return e.ExecuteRuleDefinition(ctx, definition, input)
 }
 
@@ -213,7 +213,7 @@ func (e *DynamicEngine[T]) GetCacheStats() CacheStats {
 	if e.cache == nil {
 		return CacheStats{}
 	}
-	
+
 	return e.cache.GetStats()
 }
 
@@ -232,19 +232,19 @@ func (e *DynamicEngine[T]) ClearCache() {
 func (e *DynamicEngine[T]) compileGRL(grl, ruleID string) (*ast.KnowledgeBase, error) {
 	// 创建规则资源
 	ruleBytes := pkg.NewBytesResource([]byte(grl))
-	
+
 	// 构建规则到知识库
 	ruleBuilder := builder.NewRuleBuilder(e.knowledgeLibrary)
 	if err := ruleBuilder.BuildRuleFromResource(ruleID, "1.0.0", ruleBytes); err != nil {
 		return nil, fmt.Errorf("构建规则失败: %w", err)
 	}
-	
+
 	// 获取知识库实例
 	knowledgeBase, err := e.knowledgeLibrary.NewKnowledgeBaseInstance(ruleID, "1.0.0")
 	if err != nil {
 		return nil, fmt.Errorf("创建知识库实例失败: %w", err)
 	}
-	
+
 	return knowledgeBase, nil
 }
 
@@ -255,40 +255,40 @@ func (e *DynamicEngine[T]) executeWithKnowledgeBase(
 	input any,
 ) (T, error) {
 	var zero T
-	
+
 	// 创建数据上下文
 	dataCtx := ast.NewDataContext()
-	
+
 	// 注入输入数据
 	if err := e.injectInputData(dataCtx, input); err != nil {
 		return zero, fmt.Errorf("数据注入失败: %w", err)
 	}
-	
+
 	// 注入内置函数
 	e.injectBuiltinFunctions(dataCtx)
-	
+
 	// 注入自定义函数
 	e.injectCustomFunctions(dataCtx)
-	
+
 	// 创建结果容器，规则会向其中写入结果
 	resultMap := make(map[string]interface{})
 	if err := dataCtx.Add("Result", resultMap); err != nil {
 		return zero, fmt.Errorf("创建结果容器失败: %w", err)
 	}
-	
+
 	// 创建规则引擎
 	ruleEngine := engine.NewGruleEngine()
-	
+
 	// 验证知识库不为空
 	if knowledgeBase == nil {
 		return zero, fmt.Errorf("知识库为空")
 	}
-	
+
 	// 执行规则
 	if err := ruleEngine.Execute(dataCtx, knowledgeBase); err != nil {
 		return zero, fmt.Errorf("规则执行失败: %w", err)
 	}
-	
+
 	// 提取结果
 	return e.extractResult(dataCtx)
 }
@@ -300,7 +300,7 @@ func (e *DynamicEngine[T]) executeBatchSequential(
 	input any,
 ) ([]T, error) {
 	var results []T
-	
+
 	for i, def := range definitions {
 		result, err := e.ExecuteRuleDefinition(ctx, def, input)
 		if err != nil {
@@ -313,7 +313,7 @@ func (e *DynamicEngine[T]) executeBatchSequential(
 		}
 		results = append(results, result)
 	}
-	
+
 	return results, nil
 }
 
@@ -326,7 +326,7 @@ func (e *DynamicEngine[T]) executeBatchParallel(
 	var wg sync.WaitGroup
 	results := make([]T, len(definitions))
 	errors := make([]error, len(definitions))
-	
+
 	for i, def := range definitions {
 		wg.Add(1)
 		go func(idx int, definition interface{}) {
@@ -334,33 +334,35 @@ func (e *DynamicEngine[T]) executeBatchParallel(
 			results[idx], errors[idx] = e.ExecuteRuleDefinition(ctx, definition, input)
 		}(i, def)
 	}
-	
+
 	wg.Wait()
-	
+
 	// 记录错误
 	for i, err := range errors {
 		if err != nil && e.logger != nil {
 			e.logger.Warnf(ctx, "并行规则执行失败", "index", i, "error", err)
 		}
 	}
-	
+
 	return results, nil
 }
 
 // injectInputData 注入输入数据 - 将各种类型的输入数据注入到执行上下文
 //
 // 变量注入规则:
-//   1. 结构体类型：作为单个对象注入，使用类型名（小写）作为变量名
-//   2. 匿名结构体和其他类型：统一以"Params"名称注入
-//   
+//  1. 结构体类型：作为单个对象注入，使用类型名（小写）作为变量名
+//  2. 匿名结构体和其他类型：统一以"Params"名称注入
+//
 // 注意：不支持 map[string]interface{} 类型，请使用结构体替代
 //
 // 参数:
-//   dataCtx - Grule数据上下文
-//   input   - 输入数据，支持结构体和基本类型
+//
+//	dataCtx - Grule数据上下文
+//	input   - 输入数据，支持结构体和基本类型
 //
 // 返回值:
-//   error - 注入过程中的错误
+//
+//	error - 注入过程中的错误
 func (e *DynamicEngine[T]) injectInputData(dataCtx ast.IDataContext, input any) error {
 	// 首先初始化Result变量作为一个空的map
 	result := make(map[string]any)
@@ -394,11 +396,11 @@ func (e *DynamicEngine[T]) injectStructData(dataCtx ast.IDataContext, input any,
 	if inputName == "" {
 		inputName = "Params" // 匿名结构体使用统一的Params名称
 	}
-	
+
 	if err := dataCtx.Add(inputName, input); err != nil {
 		return fmt.Errorf("注入结构体 %s 失败: %w", inputName, err)
 	}
-	
+
 	return nil
 }
 
@@ -416,12 +418,12 @@ func (e *DynamicEngine[T]) injectBuiltinFunctions(dataCtx ast.IDataContext) {
 	dataCtx.Add("Now", func() time.Time {
 		return time.Now()
 	})
-	
+
 	dataCtx.Add("Today", func() time.Time {
 		now := time.Now()
 		return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	})
-	
+
 	// 注入数学函数
 	dataCtx.Add("Max", func(a, b float64) float64 {
 		if a > b {
@@ -429,19 +431,19 @@ func (e *DynamicEngine[T]) injectBuiltinFunctions(dataCtx ast.IDataContext) {
 		}
 		return b
 	})
-	
+
 	dataCtx.Add("Min", func(a, b float64) float64 {
 		if a < b {
 			return a
 		}
 		return b
 	})
-	
+
 	// 注入字符串函数
 	dataCtx.Add("Contains", func(s, substr string) bool {
 		return strings.Contains(s, substr)
 	})
-	
+
 	// 注入集合函数
 	dataCtx.Add("Len", func(obj interface{}) int {
 		switch v := obj.(type) {
@@ -467,24 +469,24 @@ func (e *DynamicEngine[T]) injectCustomFunctions(dataCtx ast.IDataContext) {
 // extractResult 提取结果
 func (e *DynamicEngine[T]) extractResult(dataCtx ast.IDataContext) (T, error) {
 	var zero T
-	
+
 	// 获取结果变量
 	resultVar := dataCtx.Get("Result")
 	if resultVar == nil {
 		return zero, fmt.Errorf("未找到结果变量")
 	}
-	
+
 	// 获取结果值
 	resultValue, err := resultVar.GetValue()
 	if err != nil {
 		return zero, fmt.Errorf("获取结果值失败: %w", err)
 	}
-	
+
 	// 将结果转换为目标类型
 	if typedResult, ok := resultValue.Interface().(T); ok {
 		return typedResult, nil
 	}
-	
+
 	return zero, fmt.Errorf("结果类型转换失败，期望类型 %T，实际类型 %T", zero, resultValue.Interface())
 }
 
@@ -496,7 +498,7 @@ func (e *DynamicEngine[T]) validateRuleDefinition(definition interface{}) error 
 			return fmt.Errorf("验证失败: %s", errors[0].Message)
 		}
 	}
-	
+
 	return e.converter.Validate(definition)
 }
 
@@ -504,7 +506,7 @@ func (e *DynamicEngine[T]) validateRuleDefinition(definition interface{}) error 
 func (e *DynamicEngine[T]) calculateRuleHash(definition interface{}) string {
 	// 将规则定义序列化为字符串
 	var data string
-	
+
 	switch def := definition.(type) {
 	case string:
 		data = def
@@ -516,7 +518,7 @@ func (e *DynamicEngine[T]) calculateRuleHash(definition interface{}) string {
 			data = fmt.Sprintf("%+v", definition)
 		}
 	}
-	
+
 	// 计算SHA256哈希
 	hash := sha256.Sum256([]byte(data))
 	return fmt.Sprintf("%x", hash)
@@ -540,12 +542,12 @@ func NewDynamicRuleCache(ttl time.Duration, maxSize int) *DynamicRuleCache {
 func (c *DynamicRuleCache) Get(hash string) *CachedRule {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	cached, ok := c.cache[hash]
 	if !ok {
 		return nil
 	}
-	
+
 	// 检查是否过期
 	if time.Since(cached.CreatedAt) > c.ttl {
 		// 异步清理过期项
@@ -557,7 +559,7 @@ func (c *DynamicRuleCache) Get(hash string) *CachedRule {
 		}()
 		return nil
 	}
-	
+
 	return cached
 }
 
@@ -565,12 +567,12 @@ func (c *DynamicRuleCache) Get(hash string) *CachedRule {
 func (c *DynamicRuleCache) Set(hash string, rule *CachedRule) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	// 检查容量
 	if c.size >= c.maxSize {
 		c.evictLRU()
 	}
-	
+
 	c.cache[hash] = rule
 	c.size++
 }
@@ -579,7 +581,7 @@ func (c *DynamicRuleCache) Set(hash string, rule *CachedRule) {
 func (c *DynamicRuleCache) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	c.cache = make(map[string]*CachedRule)
 	c.size = 0
 }
@@ -588,11 +590,11 @@ func (c *DynamicRuleCache) Clear() {
 func (c *DynamicRuleCache) GetStats() CacheStats {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	var totalHits int64
 	activeRules := 0
 	expiredRules := 0
-	
+
 	now := time.Now()
 	for _, cached := range c.cache {
 		totalHits += cached.HitCount
@@ -602,7 +604,7 @@ func (c *DynamicRuleCache) GetStats() CacheStats {
 			activeRules++
 		}
 	}
-	
+
 	return CacheStats{
 		Size:         c.size,
 		MaxSize:      c.maxSize,
@@ -618,7 +620,7 @@ func (c *DynamicRuleCache) evictLRU() {
 	var oldestHash string
 	var oldestTime time.Time
 	var minHitCount int64 = -1
-	
+
 	// 找到最老且使用次数最少的项
 	for hash, cached := range c.cache {
 		if minHitCount == -1 || cached.HitCount < minHitCount ||
@@ -628,7 +630,7 @@ func (c *DynamicRuleCache) evictLRU() {
 			minHitCount = cached.HitCount
 		}
 	}
-	
+
 	if oldestHash != "" {
 		delete(c.cache, oldestHash)
 		c.size--
