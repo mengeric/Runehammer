@@ -41,14 +41,14 @@ func TestUniversalEngine(t *testing.T) {
 					ID:      1,
 					BizCode: "USER_VALIDATE",
 					Name:    "用户验证规则",
-					GRL:     `rule UserValidation "用户验证" { when userinput.Age >= 18 then Result["Adult"] = true; Result["Eligible"] = userinput.Age >= 21; }`,
+					GRL:     `rule UserValidation "用户验证" { when userinput.Age >= 18 then Result["Adult"] = true; Result["Eligible"] = userinput.Age >= 21; Retract("UserValidation"); }`,
 					Enabled: true,
 				},
 				{
 					ID:      2,
 					BizCode: "ORDER_PROCESS",
 					Name:    "订单处理规则",
-					GRL:     `rule OrderProcess "订单处理" { when userinput.VIP == true then Result["Discount"] = 0.1; Result["Status"] = "VIP"; }`,
+					GRL:     `rule OrderProcess "订单处理" { when userinput.VIP == true then Result["Discount"] = 0.1; Result["Status"] = "VIP"; Retract("OrderProcess"); }`,
 					Enabled: true,
 				},
 			}
@@ -130,8 +130,8 @@ func TestUniversalEngine(t *testing.T) {
 				// 通用map类型
 				mapResult, err := mapEngine.Exec(context.Background(), "USER_VALIDATE", input)
 				So(err, ShouldBeNil)
-				So(mapResult["adult"], ShouldEqual, true)
-				So(mapResult["eligible"], ShouldEqual, true)
+				So(mapResult["Adult"], ShouldEqual, true)
+				So(mapResult["Eligible"], ShouldEqual, true)
 			})
 			
 			Convey("测试类型转换错误处理", func() {
@@ -160,7 +160,7 @@ func TestUniversalEngine(t *testing.T) {
 					ID:      1,
 					BizCode: "PERF_TEST",
 					Name:    "性能测试规则",
-					GRL:     `rule PerfTest "性能测试" { when userinput.Age >= 18 then Result["Adult"] = true; Result["Score"] = userinput.Age * 2; }`,
+					GRL:     `rule PerfTest "性能测试" { when userinput.Age >= 18 then Result["Adult"] = true; Result["Score"] = userinput.Age * 2; Retract("PerfTest"); }`,
 					Enabled: true,
 				},
 			}

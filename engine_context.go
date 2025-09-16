@@ -28,7 +28,7 @@ import (
 //   error - 注入过程中的错误
 func (e *engineImpl[T]) injectInputData(dataCtx ast.IDataContext, input any) error {
 	// 首先初始化Result变量作为一个空的map
-	result := make(map[string]any)
+	result := make(map[string]interface{})
 	if err := dataCtx.Add("Result", result); err != nil {
 		return fmt.Errorf("注入Result变量失败: %w", err)
 	}

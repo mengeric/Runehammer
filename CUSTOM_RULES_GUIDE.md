@@ -4,6 +4,10 @@
 
 Runehammer规则引擎提供了多种自定义规则的使用方式，支持不同的业务场景和技术需求。本指南将详细介绍各种规则定义和使用方法。
 
+## ⚠️ 重要说明
+
+**所有Runehammer引擎都不支持 `map[string]interface{}` 作为输入数据**，因为底层的 grule-rule-engine 不支持 map 类型的解析。请始终使用结构体作为输入数据类型。返回值可以是 `map[string]interface{}` 类型。
+
 ## 🎯 规则引擎类型对比
 
 | 特性 | 传统引擎 | 通用引擎 | 动态引擎 |
@@ -113,10 +117,10 @@ func main() {
     defer orderEngine.Close()
     
     // 执行用户验证规则
-    userData := map[string]interface{}{
-        "age":    25,
-        "income": 80000.0,
-        "vip":    true,
+    userData := User{
+        Age:    25,
+        Income: 80000.0,
+        VIP:    true,
     }
     
     userResult, err := userEngine.Exec(context.Background(), "USER_VALIDATE", userData)
@@ -128,9 +132,9 @@ func main() {
         userResult.Adult, userResult.Eligible, userResult.Level)
     
     // 执行订单处理规则
-    orderData := map[string]interface{}{
-        "amount": 1500.0,
-        "vip":    true,
+    orderData := Order{
+        Amount: 1500.0,
+        VIP:    true,
     }
     
     orderResult, err := orderEngine.Exec(context.Background(), "ORDER_PROCESS", orderData)
@@ -189,18 +193,24 @@ func main() {
     // 订单处理引擎 - 返回强类型结构体  
     orderEngine := runehammer.NewTypedEngine[OrderResult](baseEngine)
     
-    // 通用map引擎 - 返回灵活的map类型
+    // 通用map引擎 - 返回灵活的map类型（注意：这里map作为返回类型，不是输入类型）
     mapEngine := runehammer.NewTypedEngine[map[string]interface{}](baseEngine)
     
     // ============================================================================
     // 测试数据
     // ============================================================================
     
-    testData := map[string]interface{}{
-        "age":    25,
-        "income": 80000.0,
-        "vip":    true,
-        "amount": 1500.0,
+    // 用户数据
+    userData := User{
+        Age:    25,
+        Income: 80000.0,
+        VIP:    true,
+    }
+    
+    // 订单数据  
+    orderData := Order{
+        Amount: 1500.0,
+        VIP:    true,
     }
     
     ctx := context.Background()
@@ -210,7 +220,7 @@ func main() {
     // ============================================================================
     
     // 用户验证 - 强类型结构体结果
-    userResult, err := userEngine.Exec(ctx, "USER_VALIDATE", testData)
+    userResult, err := userEngine.Exec(ctx, "USER_VALIDATE", userData)
     if err != nil {
         log.Printf("用户验证失败: %v", err)
     } else {
@@ -219,7 +229,7 @@ func main() {
     }
     
     // 订单处理 - 强类型结构体结果
-    orderResult, err := orderEngine.Exec(ctx, "ORDER_PROCESS", testData)
+    orderResult, err := orderEngine.Exec(ctx, "ORDER_PROCESS", orderData)
     if err != nil {
         log.Printf("订单处理失败: %v", err)
     } else {
@@ -228,7 +238,7 @@ func main() {
     }
     
     // 通用map - 灵活的map结果
-    mapResult, err := mapEngine.Exec(ctx, "USER_VALIDATE", testData)
+    mapResult, err := mapEngine.Exec(ctx, "USER_VALIDATE", userData)
     if err != nil {
         log.Printf("通用执行失败: %v", err)
     } else {
@@ -249,9 +259,14 @@ func main() {
 ##### 3.1 简单规则（SimpleRule）
 
 ```go
+// 年龄数据结构
+type AgeData struct {
+    Age int `json:"age"`
+}
+
 // 年龄验证规则
 ageRule := runehammer.SimpleRule{
-    When: "Params >= 18", // 条件表达式
+    When: "agedata.Age >= 18", // 条件表达式
     Then: map[string]string{
         "Result.Adult":   "true",
         "Result.Message": "\\"符合年龄要求\\"",
@@ -259,7 +274,8 @@ ageRule := runehammer.SimpleRule{
 }
 
 // 执行规则
-result, err := engine.ExecuteRuleDefinition(context.Background(), ageRule, 25)
+ageData := AgeData{Age: 25}
+result, err := engine.ExecuteRuleDefinition(context.Background(), ageRule, ageData)
 ```
 
 ##### 3.2 指标规则（MetricRule）
@@ -337,7 +353,7 @@ discountRule := runehammer.StandardRule{
 #### 自定义函数注册
 
 ```go
-// 创建动态引擎
+// 创建动态引擎（注意：这里map作为返回类型，不是输入类型）
 engine := runehammer.NewDynamicEngine[map[string]interface{}](
     runehammer.DynamicEngineConfig{
         EnableCache:       true,
@@ -387,26 +403,48 @@ customRule := runehammer.SimpleRule{
 #### 批量规则执行
 
 ```go
+// 订单客户数据结构
+type OrderCustomer struct {
+    Order struct {
+        Amount float64 `json:"amount"`
+    } `json:"order"`
+    Customer struct {
+        Age           int `json:"age"`
+        PurchaseCount int `json:"purchase_count"`
+    } `json:"customer"`
+}
+
 // 定义多个规则
 batchRules := []interface{}{
     runehammer.SimpleRule{
-        When: "order.Amount > 500",
+        When: "ordercustomer.Order.Amount > 500",
         Then: map[string]string{
             "Result.FreeShipping": "true",
         },
     },
     runehammer.SimpleRule{
-        When: "customer.Age > 60", 
+        When: "ordercustomer.Customer.Age > 60", 
         Then: map[string]string{
             "Result.SeniorDiscount": "0.05",
         },
     },
     runehammer.SimpleRule{
-        When: "customer.PurchaseCount > 10",
+        When: "ordercustomer.Customer.PurchaseCount > 10",
         Then: map[string]string{
             "Result.LoyaltyBonus": "true",
         },
     },
+}
+
+// 输入数据
+inputData := OrderCustomer{
+    Order: struct {
+        Amount float64 `json:"amount"`
+    }{Amount: 600.0},
+    Customer: struct {
+        Age           int `json:"age"`
+        PurchaseCount int `json:"purchase_count"`
+    }{Age: 65, PurchaseCount: 15},
 }
 
 // 批量执行
@@ -437,7 +475,6 @@ rule RuleName "规则描述" {
 
 | 输入类型 | 访问方式 | 示例 |
 |----------|----------|------|
-| map[string]interface{} | `Params.字段名` | `Params.age >= 18` |
 | 结构体 | `结构体名小写.字段名` | `user.Age >= 18` |
 | 基本类型 | `Params` | `Params >= 18` |
 
@@ -490,7 +527,7 @@ userEngine := runehammer.NewTypedEngine[UserResult](baseEngine)
 orderEngine := runehammer.NewTypedEngine[OrderResult](baseEngine)
 
 // 场景3: 快速原型，临时规则
-// 推荐：动态引擎
+// 推荐：动态引擎（注意：这里map作为返回类型，不是输入类型）
 dynamicEngine := runehammer.NewDynamicEngine[map[string]interface{}](config)
 ```
 
