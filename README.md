@@ -52,7 +52,6 @@ Runehammer 是一个基于 [Grule](https://github.com/hyperjumptech/grule-rule-e
                        ├──────────────────┤
                        │ • Redis 分布式   │
                        │ • Memory 本地    │
-                       │ • 二级缓存策略   │
                        └──────────────────┘
 ```
 
