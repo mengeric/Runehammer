@@ -498,7 +498,7 @@ func TestGRLConverter(t *testing.T) {
 
 				for _, tc := range testCases {
 					rule := NewStandardRule("TEST", "测试")
-					rule.AddSimpleCondition("field", tc.input, "value")
+					rule.AddSimpleCondition("field", Operator(tc.input), "value")
 					rule.AddAction(ActionTypeAssign, "result", "ok")
 
 					grl, err := converter.ConvertRule(*rule, Definitions{})

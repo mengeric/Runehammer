@@ -55,65 +55,81 @@ type StandardRule struct {
 	Actions     []Action    `json:"actions" yaml:"actions"`         // 动作定义
 }
 
-// Condition 条件定义 - 支持嵌套和复合条件
-type Condition struct {
-	Type       string      `json:"type" yaml:"type"`             // 条件类型
-	Operator   string      `json:"operator" yaml:"operator"`     // 操作符
-	Left       interface{} `json:"left" yaml:"left"`             // 左操作数
-	Right      interface{} `json:"right" yaml:"right"`           // 右操作数
-	Children   []Condition `json:"children" yaml:"children"`     // 子条件（用于复合条件）
-	Expression string      `json:"expression" yaml:"expression"` // 表达式字符串（用于复杂表达式）
-}
+// ============================================================================
+// 枚举类型定义
+// ============================================================================
+
+// ConditionType 条件类型
+type ConditionType string
 
 // ConditionType 条件类型枚举
 const (
-	ConditionTypeSimple    = "simple"    // 简单条件: field op value
-	ConditionTypeComposite = "composite" // 复合条件: 包含子条件
-	ConditionTypeExpression = "expression" // 表达式条件: 自由表达式
-	ConditionTypeFunction  = "function"  // 函数条件: 调用函数
+	ConditionTypeSimple     ConditionType = "simple"     // 简单条件: field op value
+	ConditionTypeComposite  ConditionType = "composite"  // 复合条件: 包含子条件
+	ConditionTypeExpression ConditionType = "expression" // 表达式条件: 自由表达式
+	ConditionTypeFunction   ConditionType = "function"   // 函数条件: 调用函数
+	ConditionTypeAnd        ConditionType = "and"        // 逻辑与条件
+	ConditionTypeOr         ConditionType = "or"         // 逻辑或条件
+	ConditionTypeNot        ConditionType = "not"        // 逻辑非条件
 )
+
+// Operator 操作符类型
+type Operator string
 
 // Operator 操作符枚举
 const (
 	// 比较操作符
-	OpEqual              = "=="        // 等于
-	OpNotEqual           = "!="        // 不等于
-	OpGreaterThan        = ">"         // 大于
-	OpLessThan           = "<"         // 小于
-	OpGreaterThanOrEqual = ">="        // 大于等于
-	OpLessThanOrEqual    = "<="        // 小于等于
+	OpEqual              Operator = "=="        // 等于
+	OpNotEqual           Operator = "!="        // 不等于
+	OpGreaterThan        Operator = ">"         // 大于
+	OpLessThan           Operator = "<"         // 小于
+	OpGreaterThanOrEqual Operator = ">="        // 大于等于
+	OpLessThanOrEqual    Operator = "<="        // 小于等于
 	
 	// 逻辑操作符
-	OpAnd = "and"    // 与
-	OpOr  = "or"     // 或
-	OpNot = "not"    // 非
+	OpAnd Operator = "and"    // 与
+	OpOr  Operator = "or"     // 或
+	OpNot Operator = "not"    // 非
 	
 	// 集合操作符
-	OpIn       = "in"       // 包含于
-	OpNotIn    = "notIn"    // 不包含于
-	OpContains = "contains" // 包含
-	OpMatches  = "matches"  // 正则匹配
-	OpBetween  = "between"  // 范围
+	OpIn       Operator = "in"       // 包含于
+	OpNotIn    Operator = "notIn"    // 不包含于
+	OpContains Operator = "contains" // 包含
+	OpMatches  Operator = "matches"  // 正则匹配
+	OpBetween  Operator = "between"  // 范围
 )
+
+// ActionType 动作类型
+type ActionType string
+
+// ActionType 动作类型枚举
+const (
+	ActionTypeAssign    ActionType = "assign"    // 赋值: target = value
+	ActionTypeCalculate ActionType = "calculate" // 计算: target = expression
+	ActionTypeInvoke    ActionType = "invoke"    // 调用: 调用函数或方法
+	ActionTypeAlert     ActionType = "alert"     // 告警: 发送告警
+	ActionTypeLog       ActionType = "log"       // 日志: 记录日志
+	ActionTypeStop      ActionType = "stop"      // 停止: 停止规则执行
+)
+
+// Condition 条件定义 - 支持嵌套和复合条件
+type Condition struct {
+	Type       ConditionType `json:"type" yaml:"type"`             // 条件类型
+	Operator   Operator      `json:"operator" yaml:"operator"`     // 操作符
+	Left       interface{}   `json:"left" yaml:"left"`             // 左操作数
+	Right      interface{}   `json:"right" yaml:"right"`           // 右操作数
+	Children   []Condition   `json:"children" yaml:"children"`     // 子条件（用于复合条件）
+	Expression string        `json:"expression" yaml:"expression"` // 表达式字符串（用于复杂表达式）
+}
 
 // Action 动作定义
 type Action struct {
-	Type       string                 `json:"type" yaml:"type"`             // 动作类型
+	Type       ActionType             `json:"type" yaml:"type"`             // 动作类型
 	Target     string                 `json:"target" yaml:"target"`         // 目标字段或函数
 	Value      interface{}            `json:"value" yaml:"value"`           // 设置的值
 	Expression string                 `json:"expression" yaml:"expression"` // 表达式
 	Parameters map[string]interface{} `json:"parameters" yaml:"parameters"` // 参数
 }
-
-// ActionType 动作类型枚举
-const (
-	ActionTypeAssign    = "assign"    // 赋值: target = value
-	ActionTypeCalculate = "calculate" // 计算: target = expression
-	ActionTypeInvoke    = "invoke"    // 调用: 调用函数或方法
-	ActionTypeAlert     = "alert"     // 告警: 发送告警
-	ActionTypeLog       = "log"       // 日志: 记录日志
-	ActionTypeStop      = "stop"      // 停止: 停止规则执行
-)
 
 // ============================================================================
 // 简化的规则定义格式
@@ -161,7 +177,7 @@ func NewStandardRule(id, name string) *StandardRule {
 }
 
 // AddSimpleCondition 添加简单条件
-func (r *StandardRule) AddSimpleCondition(field, operator string, value interface{}) *StandardRule {
+func (r *StandardRule) AddSimpleCondition(field string, operator Operator, value interface{}) *StandardRule {
 	condition := Condition{
 		Type:     ConditionTypeSimple,
 		Left:     field,
@@ -190,7 +206,7 @@ func (r *StandardRule) AddSimpleCondition(field, operator string, value interfac
 }
 
 // AddAction 添加动作
-func (r *StandardRule) AddAction(actionType, target string, value interface{}) *StandardRule {
+func (r *StandardRule) AddAction(actionType ActionType, target string, value interface{}) *StandardRule {
 	action := Action{
 		Type:   actionType,
 		Target: target,

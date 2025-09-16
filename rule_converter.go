@@ -307,7 +307,7 @@ func (c *GRLConverter) convertSimpleCondition(cond Condition, defs Definitions) 
 	}
 
 	// 操作符
-	operator, err := c.convertOperator(cond.Operator, cond.Right)
+	operator, err := c.convertOperator(string(cond.Operator), cond.Right)
 	if err != nil {
 		return "", fmt.Errorf("转换操作符失败: %w", err)
 	}
@@ -320,7 +320,7 @@ func (c *GRLConverter) convertSimpleCondition(cond Condition, defs Definitions) 
 
 	// 特殊操作符处理
 	switch cond.Operator {
-	case "between":
+	case OpBetween:
 		// 处理BETWEEN操作符
 		if reflect.TypeOf(cond.Right).Kind() == reflect.Slice {
 			values := reflect.ValueOf(cond.Right)
@@ -365,9 +365,9 @@ func (c *GRLConverter) convertCompositeCondition(cond Condition, defs Definition
 	}
 
 	// 操作符
-	operator := c.config.OperatorMapping[cond.Operator]
+	operator := c.config.OperatorMapping[string(cond.Operator)]
 	if operator == "" {
-		operator = cond.Operator
+		operator = string(cond.Operator)
 	}
 
 	return strings.Join(conditions, " "+operator+" "), nil
