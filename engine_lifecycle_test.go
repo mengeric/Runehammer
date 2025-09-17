@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"gitee.com/damengde/runehammer/config"
 	"github.com/robfig/cron/v3"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.uber.org/mock/gomock"
@@ -22,9 +23,9 @@ func TestEngineLifecycle(t *testing.T) {
 
 			Convey("正常启动同步任务", func() {
 				// 创建配置支持同步
-				config := &Config{
-					dsn:          "mock",
-					syncInterval: 100 * time.Millisecond,
+				config := &config.Config{
+					DSN:          "mock",
+					SyncInterval: 100 * time.Millisecond,
 				}
 
 				// 创建引擎实例
@@ -57,9 +58,9 @@ func TestEngineLifecycle(t *testing.T) {
 
 			Convey("未配置同步间隔", func() {
 				// 创建无同步间隔的配置
-				config := &Config{
-					dsn:          "mock",
-					syncInterval: 0,
+				config := &config.Config{
+					DSN:          "mock",
+					SyncInterval: 0,
 				}
 
 				engine := NewEngineImpl[map[string]interface{}](
@@ -87,9 +88,9 @@ func TestEngineLifecycle(t *testing.T) {
 			})
 
 			Convey("负同步间隔", func() {
-				config := &Config{
-					dsn:          "mock",
-					syncInterval: -1 * time.Second,
+				config := &config.Config{
+					DSN:          "mock",
+					SyncInterval: -1 * time.Second,
 				}
 
 				engine := NewEngineImpl[map[string]interface{}](
@@ -113,9 +114,9 @@ func TestEngineLifecycle(t *testing.T) {
 			})
 
 			Convey("重复启动同步任务", func() {
-				config := &Config{
-					dsn:          "mock",
-					syncInterval: 200 * time.Millisecond,
+				config := &config.Config{
+					DSN:          "mock",
+					SyncInterval: 200 * time.Millisecond,
 				}
 
 				engine := NewEngineImpl[map[string]interface{}](
@@ -146,7 +147,7 @@ func TestEngineLifecycle(t *testing.T) {
 		Convey("syncRules 规则同步逻辑", func() {
 
 			Convey("基本同步执行", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
@@ -168,7 +169,7 @@ func TestEngineLifecycle(t *testing.T) {
 			})
 
 			Convey("带日志的同步执行", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
@@ -191,7 +192,7 @@ func TestEngineLifecycle(t *testing.T) {
 			})
 
 			Convey("同步过程清理缓存", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
@@ -228,7 +229,7 @@ func TestEngineLifecycle(t *testing.T) {
 		Convey("clearExpiredKnowledgeBases 清理编译缓存", func() {
 
 			Convey("清理所有缓存", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
@@ -274,7 +275,7 @@ func TestEngineLifecycle(t *testing.T) {
 			})
 
 			Convey("清理空缓存", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
@@ -308,7 +309,7 @@ func TestEngineLifecycle(t *testing.T) {
 		Convey("refreshCache 刷新指定缓存", func() {
 
 			Convey("正常刷新缓存", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 				cache := NewMemoryCache(1000)
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
@@ -346,7 +347,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 			Convey("带缓存组件的刷新", func() {
 				cache := NewMemoryCache(1000)
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
@@ -381,7 +382,7 @@ func TestEngineLifecycle(t *testing.T) {
 			})
 
 			Convey("带日志的刷新", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
@@ -405,7 +406,7 @@ func TestEngineLifecycle(t *testing.T) {
 			})
 
 			Convey("空业务码刷新", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
@@ -431,7 +432,7 @@ func TestEngineLifecycle(t *testing.T) {
 		Convey("getStats 统计信息获取", func() {
 
 			Convey("基本统计信息", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
@@ -461,9 +462,9 @@ func TestEngineLifecycle(t *testing.T) {
 				logger := NewDefaultLogger()
 				syncInterval := 5 * time.Minute
 
-				config := &Config{
-					dsn:          "mock",
-					syncInterval: syncInterval,
+				config := &config.Config{
+					DSN:          "mock",
+					SyncInterval: syncInterval,
 				}
 
 				engine := NewEngineImpl[map[string]interface{}](
@@ -496,7 +497,7 @@ func TestEngineLifecycle(t *testing.T) {
 			})
 
 			Convey("关闭后的统计信息", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
@@ -519,7 +520,7 @@ func TestEngineLifecycle(t *testing.T) {
 			})
 
 			Convey("大量缓存条目统计", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
@@ -554,9 +555,9 @@ func TestEngineLifecycle(t *testing.T) {
 				cache := NewMemoryCache(1000)
 				logger := NewNoopLogger() // 使用NoopLogger避免测试输出干扰
 
-				config := &Config{
-					dsn:          "mock",
-					syncInterval: 50 * time.Millisecond,
+				config := &config.Config{
+					DSN:          "mock",
+					SyncInterval: 50 * time.Millisecond,
 				}
 
 				engine := NewEngineImpl[map[string]interface{}](
@@ -609,9 +610,9 @@ func TestEngineLifecycle(t *testing.T) {
 			})
 
 			Convey("并发安全测试", func() {
-				config := &Config{
-					dsn:          "mock",
-					syncInterval: 10 * time.Millisecond,
+				config := &config.Config{
+					DSN:          "mock",
+					SyncInterval: 10 * time.Millisecond,
 				}
 
 				engine := NewEngineImpl[map[string]interface{}](
@@ -698,9 +699,9 @@ func TestEngineLifecycle(t *testing.T) {
 			Convey("资源清理验证", func() {
 				cache := NewMemoryCache(1000)
 
-				config := &Config{
-					dsn:          "mock",
-					syncInterval: 100 * time.Millisecond,
+				config := &config.Config{
+					DSN:          "mock",
+					SyncInterval: 100 * time.Millisecond,
 				}
 
 				engine := NewEngineImpl[map[string]interface{}](
@@ -748,9 +749,9 @@ func TestEngineLifecycle(t *testing.T) {
 			Convey("同步任务添加失败处理", func() {
 				// 这个测试比较难模拟，因为cron.AddFunc很少失败
 				// 这里主要验证错误处理逻辑存在
-				config := &Config{
-					dsn:          "mock",
-					syncInterval: 1 * time.Nanosecond, // 极小间隔可能导致问题
+				config := &config.Config{
+					DSN:          "mock",
+					SyncInterval: 1 * time.Nanosecond, // 极小间隔可能导致问题
 				}
 
 				engine := NewEngineImpl[map[string]interface{}](
@@ -776,7 +777,7 @@ func TestEngineLifecycle(t *testing.T) {
 			Convey("无效配置处理", func() {
 				// nil配置
 				So(func() {
-					config := &Config{dsn: "mock"}
+					config := &config.Config{DSN: "mock"}
 					engine := NewEngineImpl[map[string]interface{}](
 						config,
 						NewMockRuleMapper(ctrl),
@@ -796,7 +797,7 @@ func TestEngineLifecycle(t *testing.T) {
 			})
 
 			Convey("同步过程异常处理", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
@@ -831,9 +832,9 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 		Convey("极端配置测试", func() {
 
 			Convey("极短同步间隔", func() {
-				config := &Config{
-					dsn:          "mock",
-					syncInterval: 1 * time.Microsecond,
+				config := &config.Config{
+					DSN:          "mock",
+					SyncInterval: 1 * time.Microsecond,
 				}
 
 				engine := NewEngineImpl[map[string]interface{}](
@@ -857,9 +858,9 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 			})
 
 			Convey("极长同步间隔", func() {
-				config := &Config{
-					dsn:          "mock",
-					syncInterval: 24 * time.Hour,
+				config := &config.Config{
+					DSN:          "mock",
+					SyncInterval: 24 * time.Hour,
 				}
 
 				engine := NewEngineImpl[map[string]interface{}](
@@ -889,7 +890,7 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 		Convey("大量数据测试", func() {
 
 			Convey("大量编译缓存", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
@@ -934,7 +935,7 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 		Convey("特殊字符处理", func() {
 
 			Convey("特殊业务码", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
@@ -972,7 +973,7 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 		Convey("并发边界测试", func() {
 
 			Convey("高并发缓存操作", func() {
-				config := &Config{dsn: "mock"}
+				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),

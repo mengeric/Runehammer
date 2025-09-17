@@ -20,13 +20,13 @@ import (
 //
 //	error - 启动过程中的错误
 func (e *engineImpl[T]) StartSync() error {
-	if e.config.GetSyncInterval() <= 0 {
+	if e.config.SyncInterval <= 0 {
 		// 未配置同步间隔，不启动同步任务
 		return nil
 	}
 
 	// 添加同步任务到定时调度器
-	_, err := e.cron.AddFunc(fmt.Sprintf("@every %s", e.config.GetSyncInterval()), func() {
+	_, err := e.cron.AddFunc(fmt.Sprintf("@every %s", e.config.SyncInterval), func() {
 		if err := e.syncRules(); err != nil && e.logger != nil {
 			e.logger.Errorf(context.Background(), "规则同步失败", "error", err)
 		}
@@ -40,7 +40,7 @@ func (e *engineImpl[T]) StartSync() error {
 	e.cron.Start()
 
 	if e.logger != nil {
-		e.logger.Infof(context.Background(), "同步任务已启动", "interval", e.config.GetSyncInterval())
+		e.logger.Infof(context.Background(), "同步任务已启动", "interval", e.config.SyncInterval)
 	}
 
 	return nil
@@ -161,7 +161,7 @@ func (e *engineImpl[T]) getStats() map[string]interface{} {
 	return map[string]interface{}{
 		"closed":          e.closed,
 		"knowledge_bases": kbCount,
-		"sync_interval":   e.config.GetSyncInterval(),
+		"sync_interval":   e.config.SyncInterval,
 		"cache_enabled":   e.cache != nil,
 		"logger_enabled":  e.logger != nil,
 	}

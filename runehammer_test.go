@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"gitee.com/damengde/runehammer/config"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.uber.org/mock/gomock"
 )
@@ -50,10 +51,14 @@ func TestRunehammer(t *testing.T) {
 				// 验证接口定义正确性，通过编译即可确保接口正确
 				var engine Engine[map[string]interface{}]
 
+				// 创建MockRuleMapper并设置期望
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+
 				// 模拟引擎实现
 				engine = NewEngineImpl[map[string]interface{}](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -76,9 +81,12 @@ func TestRunehammer(t *testing.T) {
 				// 测试不同的泛型类型
 
 				// string类型
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				stringEngine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -96,8 +104,8 @@ func TestRunehammer(t *testing.T) {
 					Grade string `json:"grade"`
 				}
 				structEngine := NewEngineImpl[TestResult](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -112,8 +120,8 @@ func TestRunehammer(t *testing.T) {
 				// 切片类型
 
 				sliceEngine := NewEngineImpl[[]string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -189,7 +197,7 @@ func TestRunehammer(t *testing.T) {
 				mapper.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*Rule{}, nil).AnyTimes()
 
 				engine := NewEngineImpl[map[string]interface{}](
-					&Config{dsn: "mock"},
+					&config.Config{DSN: "mock"},
 					mapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
@@ -217,7 +225,7 @@ func TestRunehammer(t *testing.T) {
 				mapper.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*Rule{}, nil).AnyTimes()
 
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
+					&config.Config{DSN: "mock"},
 					mapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
@@ -264,7 +272,7 @@ func TestRunehammer(t *testing.T) {
 
 				// string返回类型
 				stringEngine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
+					&config.Config{DSN: "mock"},
 					mapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
@@ -278,7 +286,7 @@ func TestRunehammer(t *testing.T) {
 
 				// int返回类型
 				intEngine := NewEngineImpl[int](
-					&Config{dsn: "mock"},
+					&config.Config{DSN: "mock"},
 					mapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
@@ -297,7 +305,7 @@ func TestRunehammer(t *testing.T) {
 				}
 
 				structEngine := NewEngineImpl[Result](
-					&Config{dsn: "mock"},
+					&config.Config{DSN: "mock"},
 					mapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
@@ -330,9 +338,12 @@ func TestRunehammer(t *testing.T) {
 		Convey("资源管理", func() {
 
 			Convey("Close方法", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -348,9 +359,12 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("重复关闭", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -370,9 +384,12 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("关闭后调用方法", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -401,9 +418,12 @@ func TestRunehammer(t *testing.T) {
 		Convey("上下文处理", func() {
 
 			Convey("正常上下文", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), "test").Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -422,9 +442,12 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("带值的上下文", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -443,9 +466,12 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("取消的上下文", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -468,9 +494,12 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("nil上下文", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -491,9 +520,12 @@ func TestRunehammer(t *testing.T) {
 		Convey("业务码处理", func() {
 
 			Convey("正常业务码", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -521,9 +553,12 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("空业务码", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -545,9 +580,12 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("特殊字符业务码", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -580,9 +618,12 @@ func TestRunehammer(t *testing.T) {
 		Convey("并发安全性", func() {
 
 			Convey("并发执行", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -629,9 +670,12 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("并发关闭", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -839,11 +883,18 @@ func TestRunehammerIntegration(t *testing.T) {
 		Convey("接口多态性", func() {
 
 			Convey("不同实现的兼容性", func() {
+				// 创建MockRuleMapper并设置期望
+				mockMapper1 := NewMockRuleMapper(ctrl)
+				mockMapper1.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*Rule{}, nil).AnyTimes()
+				
+				mockMapper2 := NewMockRuleMapper(ctrl)
+				mockMapper2.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*Rule{}, nil).AnyTimes()
+				
 				// 创建不同配置的引擎实例
 				engines := []Engine[string]{
 					NewEngineImpl[string](
-						&Config{dsn: "mock"},
-						NewMockRuleMapper(ctrl),
+						&config.Config{DSN: "mock"},
+						mockMapper1,
 						NewMemoryCache(1000),
 						CacheKeyBuilder{},
 						NewNoopLogger(),
@@ -853,8 +904,8 @@ func TestRunehammerIntegration(t *testing.T) {
 						false,
 					),
 					NewEngineImpl[string](
-						&Config{dsn: "mock"},
-						NewMockRuleMapper(ctrl),
+						&config.Config{DSN: "mock"},
+						mockMapper2,
 						nil, // 无缓存
 						CacheKeyBuilder{},
 						NewDefaultLogger(),
@@ -886,9 +937,12 @@ func TestRunehammerIntegration(t *testing.T) {
 		Convey("实际使用场景模拟", func() {
 
 			Convey("典型业务使用模式", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[map[string]interface{}](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),
@@ -955,9 +1009,12 @@ func TestRunehammerIntegration(t *testing.T) {
 		Convey("错误恢复能力", func() {
 
 			Convey("处理无效输入", func() {
+				mockMapper := NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				
 				engine := NewEngineImpl[string](
-					&Config{dsn: "mock"},
-					NewMockRuleMapper(ctrl),
+					&config.Config{DSN: "mock"},
+					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
 					NewNoopLogger(),

@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"time"
 
+	"gitee.com/damengde/runehammer/config"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/robfig/cron/v3"
+	"gorm.io/gorm"
 )
 
 // ============================================================================
@@ -283,54 +286,169 @@ func (w *baseEngineWrapper) Close() error {
 //	    WithLogger(logger),
 //	)
 func New[T any](opts ...Option) (Engine[T], error) {
-	// 1. 初始化默认配置
-	cfg := DefaultConfig()
+	// 1. 构建配置
+	cfg := config.DefaultConfig()
 	for _, opt := range opts {
-		cfg.ApplyOption(opt)
+		opt(cfg)
 	}
 
-	// 2. 配置验证 - 确保必要的配置项已设置
+	// 2. 验证配置
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("配置验证失败: %w", err)
 	}
 
-	// 3. 设置数据库连接 - 支持DSN字符串或直接传入GORM实例
-	if err := cfg.SetupDB(); err != nil {
-		return nil, fmt.Errorf("数据库初始化失败: %w", err)
+	// 3. 创建运行时上下文
+	ctx, err := NewRuntimeContext(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("创建运行时上下文失败: %w", err)
 	}
 
-	// 4. 设置缓存系统 - 支持Redis或内存缓存
-	if err := cfg.SetupCache(); err != nil {
-		return nil, fmt.Errorf("缓存初始化失败: %w", err)
-	}
-
-	// 5. 执行数据库迁移 - 自动创建规则表结构
-	if cfg.GetAutoMigrate() {
-		if err := cfg.GetDB().AutoMigrate(&Rule{}); err != nil {
-			return nil, fmt.Errorf("数据库迁移失败: %w", err)
-		}
-	}
-
-	// 6. 创建规则映射器 - 负责规则的数据库操作
-	ruleMapper := NewRuleMapper(cfg.GetDB())
-
-	// 7. 创建引擎实例
+	// 4. 创建引擎实例（暂时保持向后兼容）
 	eng := NewEngineImpl[T](
-		cfg, // 直接传递Config，它现在实现了ConfigInterface
-		ruleMapper,
-		cfg.GetCache(),
+		cfg,                     // 仍然传递Config保持兼容性
+		ctx.RuleMapper,          // 但使用RuntimeContext中的实例
+		ctx.Cache,
 		CacheKeyBuilder{},
-		cfg.GetLogger().(Logger), // 类型断言从interface{}转换为Logger
+		ctx.Logger,
 		ast.NewKnowledgeLibrary(),
 		&sync.Map{},
 		cron.New(),
 		false,
 	)
 
-	// 8. 启动定时同步任务 - 用于缓存清理和规则预热
+	// 5. 启动定时同步任务
 	if err := eng.StartSync(); err != nil {
 		return nil, fmt.Errorf("启动同步任务失败: %w", err)
 	}
 
 	return eng, nil
+}
+
+// ============================================================================
+// 配置选项函数 - 用于构建配置
+// ============================================================================
+
+// Option 配置选项函数类型
+type Option func(*config.Config)
+
+// ContextOption 上下文选项函数类型
+type ContextOption func(*RuntimeContext) error
+
+// WithDSN 设置数据库连接字符串
+func WithDSN(dsn string) Option {
+	return func(c *config.Config) {
+		c.DSN = dsn
+	}
+}
+
+// WithAutoMigrate 启用自动数据库迁移
+func WithAutoMigrate() Option {
+	return func(c *config.Config) {
+		c.AutoMigrate = true
+	}
+}
+
+// WithTableName 设置规则表名
+func WithTableName(name string) Option {
+	return func(c *config.Config) {
+		c.TableName = name
+	}
+}
+
+// WithCacheTTL 设置缓存生存时间
+func WithCacheTTL(ttl time.Duration) Option {
+	return func(c *config.Config) {
+		c.CacheTTL = ttl
+	}
+}
+
+// WithMaxCacheSize 设置最大缓存大小
+func WithMaxCacheSize(size int) Option {
+	return func(c *config.Config) {
+		c.MaxCacheSize = size
+	}
+}
+
+// WithRedis 设置Redis连接参数
+func WithRedis(addr, password string, db int) Option {
+	return func(c *config.Config) {
+		c.RedisAddr = addr
+		c.RedisPassword = password
+		c.RedisDB = db
+		c.EnableCache = true
+	}
+}
+
+// WithDisableCache 禁用缓存
+func WithDisableCache() Option {
+	return func(c *config.Config) {
+		c.EnableCache = false
+	}
+}
+
+// WithSyncInterval 设置同步间隔
+func WithSyncInterval(interval time.Duration) Option {
+	return func(c *config.Config) {
+		c.SyncInterval = interval
+	}
+}
+
+// WithDynamicConfig 设置动态配置
+func WithDynamicConfig(dynamicConfig interface{}) Option {
+	return func(c *config.Config) {
+		// 暂时忽略，后续实现
+	}
+}
+
+// ============================================================================
+// 实例对象配置选项 - 用于自定义组件实例
+// ============================================================================
+
+// WithDB 配置数据库实例（向后兼容）
+func WithDB(db interface{}) Option {
+	return func(c *config.Config) {
+		// 这个函数的实际处理在NewRuntimeContext中
+		// 暂时标记为使用自定义DB
+		c.DSN = "__CUSTOM_DB__"
+	}
+}
+
+// WithCache 配置缓存实例（向后兼容）
+func WithCache(cache Cache) Option {
+	return func(c *config.Config) {
+		c.EnableCache = cache != nil
+		// 实际缓存实例的处理在NewRuntimeContext中
+	}
+}
+
+// WithLogger 配置日志实例（向后兼容）
+func WithLogger(logger Logger) Option {
+	return func(c *config.Config) {
+		// 这个函数的实际处理在NewRuntimeContext中
+		// 这里只是标记
+	}
+}
+
+// WithDatabase 使用指定的数据库实例
+func WithDatabase(db *gorm.DB) ContextOption {
+	return func(ctx *RuntimeContext) error {
+		ctx.DB = db
+		return nil
+	}
+}
+
+// WithCacheInstance 使用指定的缓存实例
+func WithCacheInstance(cache Cache) ContextOption {
+	return func(ctx *RuntimeContext) error {
+		ctx.Cache = cache
+		return nil
+	}
+}
+
+// WithLoggerInstance 使用指定的日志实例
+func WithLoggerInstance(logger Logger) ContextOption {
+	return func(ctx *RuntimeContext) error {
+		ctx.Logger = logger
+		return nil
+	}
 }

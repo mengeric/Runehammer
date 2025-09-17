@@ -1,4 +1,4 @@
-package runehammer
+package config
 
 import (
 	"time"

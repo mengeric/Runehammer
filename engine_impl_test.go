@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	"gitee.com/damengde/runehammer/config"
 	"go.uber.org/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
@@ -20,7 +21,7 @@ func TestEngineImpl(t *testing.T) {
 		defer ctrl.Finish()
 		
 		Convey("引擎创建", func() {
-			config := DefaultConfig()
+			cfg := config.DefaultConfig()
 			mapper := NewMockRuleMapper(ctrl)
 			cache := NewMockCache(ctrl)
 			cacheKeys := CacheKeyBuilder{}
@@ -30,7 +31,7 @@ func TestEngineImpl(t *testing.T) {
 			cronScheduler := cron.New()
 			
 			engine := NewEngineImpl[map[string]any](
-				config, mapper, cache, cacheKeys, logger,
+				cfg, mapper, cache, cacheKeys, logger,
 				knowledgeLibrary, knowledgeBases, cronScheduler, false,
 			)
 			
@@ -38,7 +39,7 @@ func TestEngineImpl(t *testing.T) {
 		})
 
 		Convey("执行规则", func() {
-			config := DefaultConfig()
+			cfg := config.DefaultConfig()
 			mapper := NewMockRuleMapper(ctrl)
 			cache := NewMockCache(ctrl)
 			cacheKeys := CacheKeyBuilder{}
@@ -48,7 +49,7 @@ func TestEngineImpl(t *testing.T) {
 			cronScheduler := cron.New()
 			
 			engine := NewEngineImpl[map[string]any](
-				config, mapper, cache, cacheKeys, logger,
+				cfg, mapper, cache, cacheKeys, logger,
 				knowledgeLibrary, knowledgeBases, cronScheduler, false,
 			)
 
@@ -107,7 +108,7 @@ func TestEngineImpl(t *testing.T) {
 		})
 
 		Convey("引擎关闭", func() {
-			config := DefaultConfig()
+			cfg := config.DefaultConfig()
 			mapper := NewMockRuleMapper(ctrl)
 			cache := NewMockCache(ctrl)
 			cacheKeys := CacheKeyBuilder{}
@@ -117,7 +118,7 @@ func TestEngineImpl(t *testing.T) {
 			cronScheduler := cron.New()
 			
 			engine := NewEngineImpl[map[string]any](
-				config, mapper, cache, cacheKeys, logger,
+				cfg, mapper, cache, cacheKeys, logger,
 				knowledgeLibrary, knowledgeBases, cronScheduler, false,
 			)
 
@@ -167,7 +168,7 @@ func TestEngineImpl(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			Convey("使用真实数据库映射器", func() {
-				config := DefaultConfig()
+				cfg := config.DefaultConfig()
 				mapper := NewRuleMapper(db)
 				cache := NewMockCache(ctrl)
 				cacheKeys := CacheKeyBuilder{}
@@ -177,7 +178,7 @@ func TestEngineImpl(t *testing.T) {
 				cronScheduler := cron.New()
 				
 				engine := NewEngineImpl[map[string]any](
-					config, mapper, cache, cacheKeys, logger,
+					cfg, mapper, cache, cacheKeys, logger,
 					knowledgeLibrary, knowledgeBases, cronScheduler, false,
 				)
 

@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"gitee.com/damengde/runehammer/config"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/hyperjumptech/grule-rule-engine/builder"
 	"github.com/hyperjumptech/grule-rule-engine/engine"
@@ -21,7 +22,7 @@ import (
 // engineImpl 规则引擎的具体实现 - 包含所有运行时状态和依赖
 type engineImpl[T any] struct {
 	// 核心配置和依赖
-	config    *Config        // 引擎配置信息 - 直接使用具体类型
+	config    *config.Config  // 引擎配置信息 - 使用config包的Config类型
 	mapper    RuleMapper     // 规则数据访问接口
 	cache     Cache           // 缓存接口（Redis或内存）
 	cacheKeys CacheKeyBuilder // 缓存键构建器
@@ -39,7 +40,7 @@ type engineImpl[T any] struct {
 
 // NewEngineImpl 创建引擎实例
 func NewEngineImpl[T any](
-	cfg *Config,  // 直接使用具体的Config类型
+	cfg *config.Config,  // 使用config包的Config类型
 	mapper RuleMapper,
 	cache Cache,
 	cacheKeys CacheKeyBuilder,
@@ -54,7 +55,7 @@ func NewEngineImpl[T any](
 	}
 	
 	return &engineImpl[T]{
-		config:           cfg,  // 直接赋值
+		config:           cfg,  // 直接赋值config包的Config
 		mapper:           mapper,
 		cache:            cache,
 		cacheKeys:        cacheKeys,

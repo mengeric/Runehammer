@@ -3,6 +3,8 @@ package runehammer
 import (
 	"fmt"
 	"time"
+	
+	"gitee.com/damengde/runehammer/config"
 )
 
 // ============================================================================
@@ -154,19 +156,19 @@ func (c *SQLiteTestConfig) BuildDSN() string {
 }
 
 // WithOptimizedSQLite 返回使用优化SQLite配置的选项（测试专用）
-func WithOptimizedSQLite(config *SQLiteTestConfig) Option {
-	return func(c *Config) {
-		if config == nil {
-			config = ProductionSQLiteConfig()
+func WithOptimizedSQLite(sqliteConfig *SQLiteTestConfig) Option {
+	return func(c *config.Config) {
+		if sqliteConfig == nil {
+			sqliteConfig = ProductionSQLiteConfig()
 		}
-		c.dsn = "sqlite:" + config.BuildDSN()
+		c.DSN = "sqlite:" + sqliteConfig.BuildDSN()
 	}
 }
 
 // WithTestSQLite 返回测试用的SQLite配置选项
 func WithTestSQLite(testName string) Option {
-	config := TestSharedMemoryConfig(testName)
-	return WithOptimizedSQLite(config)
+	sqliteConfig := TestSharedMemoryConfig(testName)
+	return WithOptimizedSQLite(sqliteConfig)
 }
 
 // contains 辅助函数

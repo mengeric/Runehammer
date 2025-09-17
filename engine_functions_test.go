@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"gitee.com/damengde/runehammer/config"
 	"go.uber.org/mock/gomock"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/robfig/cron/v3"
@@ -19,7 +20,7 @@ func TestEngineFunctions(t *testing.T) {
 		defer ctrl.Finish()
 
 		// 创建测试用的引擎实例
-		config := DefaultConfig()
+		cfg := config.DefaultConfig()
 		mapper := NewMockRuleMapper(ctrl)
 		cache := NewMockCache(ctrl)
 		cacheKeys := CacheKeyBuilder{}
@@ -28,7 +29,7 @@ func TestEngineFunctions(t *testing.T) {
 		cronScheduler := cron.New()
 
 		engine := NewEngineImpl[map[string]any](
-			config, mapper, cache, cacheKeys, logger,
+			cfg, mapper, cache, cacheKeys, logger,
 			knowledgeLibrary, &sync.Map{}, cronScheduler, false,
 		)
 
@@ -506,7 +507,7 @@ func TestEngineFunctionsMissing(t *testing.T) {
 		defer ctrl.Finish()
 		
 		// 创建测试用的引擎实例
-		config := DefaultConfig()
+		cfg := config.DefaultConfig()
 		mapper := NewMockRuleMapper(ctrl)
 		cache := NewMockCache(ctrl)
 		cacheKeys := CacheKeyBuilder{}
@@ -515,7 +516,7 @@ func TestEngineFunctionsMissing(t *testing.T) {
 		cronScheduler := cron.New()
 
 		engine := NewEngineImpl[map[string]any](
-			config, mapper, cache, cacheKeys, logger,
+			cfg, mapper, cache, cacheKeys, logger,
 			knowledgeLibrary, &sync.Map{}, cronScheduler, false,
 		)
 
