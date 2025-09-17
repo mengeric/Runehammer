@@ -42,14 +42,15 @@ func (e *engineImpl[T]) injectInputData(dataCtx ast.IDataContext, input any) err
 		t = t.Elem()
 	}
 
-	switch v.Kind() {
-	case reflect.Map:
-		return fmt.Errorf("不支持 map 类型，请使用结构体替代")
-	case reflect.Struct:
-		return e.injectStructData(dataCtx, input, t)
-	default:
-		return e.injectDefaultData(dataCtx, input)
-	}
+    switch v.Kind() {
+    case reflect.Map:
+        // Map 作为整体注入到 Params，符合 README 约定
+        return e.injectDefaultData(dataCtx, input)
+    case reflect.Struct:
+        return e.injectStructData(dataCtx, input, t)
+    default:
+        return e.injectDefaultData(dataCtx, input)
+    }
 }
 
 // injectStructData 注入结构体数据 - 将整个结构体作为单个对象注入
@@ -92,8 +93,11 @@ func (e *engineImpl[T]) injectDefaultData(dataCtx ast.IDataContext, input any) e
 func (e *engineImpl[T]) extractResult(dataCtx ast.IDataContext) (T, error) {
 	var zero T
 
-	// 获取Result变量
-	resultValue := dataCtx.Get("Result")
+    // 获取Result变量（兼容大小写）
+    resultValue := dataCtx.Get("Result")
+    if resultValue == nil {
+        resultValue = dataCtx.Get("result")
+    }
 	if resultValue == nil {
 		// 如果规则没有设置result变量，返回零值
 		return zero, nil
