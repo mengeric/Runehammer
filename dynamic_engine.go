@@ -1,5 +1,7 @@
 package runehammer
 
+//go:generate mockgen -source=dynamic_engine.go -destination=dynamic_engine_mock.go -package=runehammer
+
 import (
 	"context"
 	"crypto/sha256"

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/mock/gomock"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/robfig/cron/v3"
 	. "github.com/smartystreets/goconvey/convey"
@@ -14,12 +15,14 @@ import (
 // TestEngineFunctions 测试引擎内置函数
 func TestEngineFunctions(t *testing.T) {
 	Convey("引擎内置函数测试", t, func() {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
 
 		// 创建测试用的引擎实例
 		config := DefaultConfig()
-		mapper := newMockRuleMapper()
-		cache := newMockCache()
-		cacheKeys := newMockCacheKeyBuilder()
+		mapper := NewMockRuleMapper(ctrl)
+		cache := NewMockCache(ctrl)
+		cacheKeys := CacheKeyBuilder{}
 		logger := NewNoopLogger()
 		knowledgeLibrary := ast.NewKnowledgeLibrary()
 		cronScheduler := cron.New()
@@ -499,12 +502,14 @@ func TestEngineFunctions(t *testing.T) {
 // TestEngineFunctionsMissing 测试缺失的函数以达到100%覆盖率
 func TestEngineFunctionsMissing(t *testing.T) {
 	Convey("缺失函数测试", t, func() {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
 		
 		// 创建测试用的引擎实例
 		config := DefaultConfig()
-		mapper := newMockRuleMapper()
-		cache := newMockCache()
-		cacheKeys := newMockCacheKeyBuilder()
+		mapper := NewMockRuleMapper(ctrl)
+		cache := NewMockCache(ctrl)
+		cacheKeys := CacheKeyBuilder{}
 		logger := NewNoopLogger()
 		knowledgeLibrary := ast.NewKnowledgeLibrary()
 		cronScheduler := cron.New()

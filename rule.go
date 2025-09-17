@@ -1,5 +1,7 @@
 package runehammer
 
+//go:generate mockgen -source=rule.go -destination=rule_mock.go -package=runehammer
+
 import (
 	"context"
 	"time"

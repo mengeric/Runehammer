@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sync"
 
+	"go.uber.org/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/robfig/cron/v3"
@@ -13,12 +14,14 @@ import (
 // TestEngineContext 测试引擎上下文数据管理
 func TestEngineContext(t *testing.T) {
 	Convey("引擎数据上下文测试", t, func() {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
 		
 		// 创建测试用的引擎实例
 		config := DefaultConfig()
-		mapper := newMockRuleMapper()
-		cache := newMockCache()
-		cacheKeys := newMockCacheKeyBuilder()
+		mapper := NewMockRuleMapper(ctrl)
+		cache := NewMockCache(ctrl)
+		cacheKeys := CacheKeyBuilder{}
 		logger := NewNoopLogger()
 		knowledgeLibrary := ast.NewKnowledgeLibrary()
 		cronScheduler := cron.New()
@@ -390,11 +393,14 @@ func TestEngineContext(t *testing.T) {
 // TestExtractResultFunctions 专门测试结果提取相关函数
 func TestExtractResultFunctions(t *testing.T) {
 	Convey("结果提取函数详细测试", t, func() {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		
 		// 创建测试用的引擎实例
 		config := DefaultConfig()
-		mapper := newMockRuleMapper()
-		cache := newMockCache()
-		cacheKeys := newMockCacheKeyBuilder()
+		mapper := NewMockRuleMapper(ctrl)
+		cache := NewMockCache(ctrl)
+		cacheKeys := CacheKeyBuilder{}
 		logger := NewNoopLogger()
 		knowledgeLibrary := ast.NewKnowledgeLibrary()
 		cronScheduler := cron.New()

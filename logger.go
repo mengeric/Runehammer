@@ -1,5 +1,7 @@
 package runehammer
 
+//go:generate mockgen -source=logger.go -destination=logger_mock.go -package=runehammer
+
 import (
 	"context"
 	"fmt"

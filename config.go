@@ -101,11 +101,11 @@ func (c *Config) SetupDB() error {
 	if gormCfg == nil {
 		gormCfg = &gorm.Config{}
 	}
-	
+
 	// 根据DSN类型选择不同的驱动
 	var db *gorm.DB
 	var err error
-	
+
 	if strings.HasPrefix(c.dsn, "sqlite:") {
 		// SQLite数据库
 		sqliteDSN := strings.TrimPrefix(c.dsn, "sqlite:")
@@ -120,7 +120,7 @@ func (c *Config) SetupDB() error {
 			return fmt.Errorf("创建MySQL连接失败: %w", err)
 		}
 	}
-	
+
 	c.db = db
 	return nil
 }
@@ -152,7 +152,7 @@ func (c *Config) SetupCache() error {
 
 		if err := client.Ping(ctx).Err(); err != nil {
 			// Redis连接失败，返回错误而不是降级
-			return fmt.Errorf("Redis连接失败: %w", err)
+			return err
 		}
 
 		c.cache = NewRedisCache(client)

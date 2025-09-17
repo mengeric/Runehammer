@@ -1,5 +1,7 @@
 package runehammer
 
+//go:generate mockgen -source=cache.go -destination=cache_mock.go -package=runehammer
+
 import (
 	"context"
 	"encoding/json"
