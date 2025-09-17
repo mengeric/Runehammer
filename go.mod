@@ -1,6 +1,6 @@
 module gitee.com/damengde/runehammer
 
-go 1.21
+go 1.24.3
 
 require (
 	github.com/hyperjumptech/grule-rule-engine v1.14.1
@@ -32,6 +32,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/smarty/assertions v1.15.0 // indirect
 	github.com/src-d/gcfg v1.4.0 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/xanzy/ssh-agent v0.2.1 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.25.0 // indirect
