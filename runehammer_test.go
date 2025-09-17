@@ -9,6 +9,7 @@ import (
 
 	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
+	"gitee.com/damengde/runehammer/engine"
 	logger "gitee.com/damengde/runehammer/logger"
 	"gitee.com/damengde/runehammer/rule"
 	. "github.com/smartystreets/goconvey/convey"
@@ -52,14 +53,14 @@ func TestRunehammer(t *testing.T) {
 				defer ctrl.Finish()
 
 				// 验证接口定义正确性，通过编译即可确保接口正确
-				var engine Engine[map[string]interface{}]
+				var eie Engine[map[string]interface{}]
 
 				// 创建MockRuleMapper并设置期望
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
 				// 模拟引擎实现
-				engine = NewEngineImpl[map[string]interface{}](
+				eie = engine.NewEngineImpl[map[string]interface{}](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -71,10 +72,10 @@ func TestRunehammer(t *testing.T) {
 					false,
 				)
 
-				So(engine, ShouldNotBeNil)
-				So(engine, ShouldImplement, (*Engine[map[string]interface{}])(nil))
+				So(eie, ShouldNotBeNil)
+				So(eie, ShouldImplement, (*Engine[map[string]interface{}])(nil))
 
-				engine.Close()
+				eie.Close()
 			})
 
 			Convey("泛型支持验证", func() {
@@ -87,7 +88,7 @@ func TestRunehammer(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				stringEngine := NewEngineImpl[string](
+				stringEngine := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -106,7 +107,7 @@ func TestRunehammer(t *testing.T) {
 					Score int    `json:"score"`
 					Grade string `json:"grade"`
 				}
-				structEngine := NewEngineImpl[TestResult](
+				structEngine := engine.NewEngineImpl[TestResult](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -122,7 +123,7 @@ func TestRunehammer(t *testing.T) {
 
 				// 切片类型
 
-				sliceEngine := NewEngineImpl[[]string](
+				sliceEngine := engine.NewEngineImpl[[]string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -144,48 +145,48 @@ func TestRunehammer(t *testing.T) {
 				SkipConvey("需要真实数据库连接", func() {
 					// 这个测试需要真实的数据库配置
 					// 在实际环境中取消Skip并提供正确的数据库配置
-					engine, err := New[map[string]interface{}](
+					eie, err := New[map[string]interface{}](
 						WithDSN("mysql://user:pass@localhost/test"),
 					)
 					So(err, ShouldBeNil)
-					So(engine, ShouldNotBeNil)
-					So(engine, ShouldImplement, (*Engine[map[string]interface{}])(nil))
+					So(eie, ShouldNotBeNil)
+					So(eie, ShouldImplement, (*Engine[map[string]interface{}])(nil))
 
-					engine.Close()
+					eie.Close()
 				})
 			})
 
 			Convey("完整配置创建引擎", func() {
 				SkipConvey("需要真实数据库和Redis连接", func() {
 					// 这个测试需要真实的外部依赖
-					engine, err := New[map[string]interface{}](
+					eie, err := New[map[string]interface{}](
 						WithDSN("mysql://user:pass@localhost/test"),
 						WithCache(cache.NewMemoryCache(1000)),
 						WithLogger(logger.NewDefaultLogger()),
 						WithAutoMigrate(),
 					)
 					So(err, ShouldBeNil)
-					So(engine, ShouldNotBeNil)
+					So(eie, ShouldNotBeNil)
 
-					engine.Close()
+					eie.Close()
 				})
 			})
 
 			Convey("配置验证失败", func() {
 				// 测试无效配置
-				engine, err := New[map[string]interface{}]()
+				eie, err := New[map[string]interface{}]()
 				So(err, ShouldNotBeNil)
-				So(engine, ShouldBeNil)
+				So(eie, ShouldBeNil)
 				So(err.Error(), ShouldContainSubstring, "配置验证失败")
 			})
 
 			Convey("数据库连接失败", func() {
 				// 测试无效数据库DSN
-				engine, err := New[map[string]interface{}](
+				eie, err := New[map[string]interface{}](
 					WithDSN("invalid_dsn"),
 				)
 				So(err, ShouldNotBeNil)
-				So(engine, ShouldBeNil)
+				So(eie, ShouldBeNil)
 				So(err.Error(), ShouldContainSubstring, "数据库初始化失败")
 			})
 		})
@@ -199,7 +200,7 @@ func TestRunehammer(t *testing.T) {
 				mapper := rule.NewMockRuleMapper(ctrl)
 				mapper.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[map[string]interface{}](
+				eie := engine.NewEngineImpl[map[string]interface{}](
 					&config.Config{DSN: "mock"},
 					mapper,
 					cache.NewMemoryCache(1000),
@@ -210,13 +211,13 @@ func TestRunehammer(t *testing.T) {
 					nil,
 					false,
 				)
-				defer engine.Close()
+				defer eie.Close()
 
 				ctx := context.Background()
 
 				// 验证方法存在且签名正确
 				So(func() {
-					engine.Exec(ctx, "test_biz", map[string]interface{}{"test": "data"})
+					eie.Exec(ctx, "test_biz", map[string]interface{}{"test": "data"})
 				}, ShouldNotPanic)
 			})
 
@@ -227,7 +228,7 @@ func TestRunehammer(t *testing.T) {
 				mapper := rule.NewMockRuleMapper(ctrl)
 				mapper.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mapper,
 					cache.NewMemoryCache(1000),
@@ -238,13 +239,13 @@ func TestRunehammer(t *testing.T) {
 					nil,
 					false,
 				)
-				defer engine.Close()
+				defer eie.Close()
 
 				ctx := context.Background()
 
 				// map类型输入
 				So(func() {
-					engine.Exec(ctx, "test_biz", map[string]interface{}{
+					eie.Exec(ctx, "test_biz", map[string]interface{}{
 						"user": "john",
 						"age":  25,
 					})
@@ -257,12 +258,12 @@ func TestRunehammer(t *testing.T) {
 				}
 
 				So(func() {
-					engine.Exec(ctx, "test_biz", User{Name: "alice", Age: 30})
+					eie.Exec(ctx, "test_biz", User{Name: "alice", Age: 30})
 				}, ShouldNotPanic)
 
 				// 基础类型输入
 				So(func() {
-					engine.Exec(ctx, "test_biz", "simple_string")
+					eie.Exec(ctx, "test_biz", "simple_string")
 				}, ShouldNotPanic)
 			})
 
@@ -274,7 +275,7 @@ func TestRunehammer(t *testing.T) {
 				mapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
 				// string返回类型
-				stringEngine := NewEngineImpl[string](
+				stringEngine := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mapper,
 					cache.NewMemoryCache(1000),
@@ -288,7 +289,7 @@ func TestRunehammer(t *testing.T) {
 				defer stringEngine.Close()
 
 				// int返回类型
-				intEngine := NewEngineImpl[int](
+				intEngine := engine.NewEngineImpl[int](
 					&config.Config{DSN: "mock"},
 					mapper,
 					cache.NewMemoryCache(1000),
@@ -307,7 +308,7 @@ func TestRunehammer(t *testing.T) {
 					Message string `json:"message"`
 				}
 
-				structEngine := NewEngineImpl[Result](
+				structEngine := engine.NewEngineImpl[Result](
 					&config.Config{DSN: "mock"},
 					mapper,
 					cache.NewMemoryCache(1000),
@@ -344,7 +345,7 @@ func TestRunehammer(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -357,7 +358,7 @@ func TestRunehammer(t *testing.T) {
 				)
 
 				// 验证Close方法存在
-				err := engine.Close()
+				err := eie.Close()
 				So(err, ShouldBeNil)
 			})
 
@@ -365,7 +366,7 @@ func TestRunehammer(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -378,11 +379,11 @@ func TestRunehammer(t *testing.T) {
 				)
 
 				// 第一次关闭
-				err1 := engine.Close()
+				err1 := eie.Close()
 				So(err1, ShouldBeNil)
 
 				// 第二次关闭应该也成功
-				err2 := engine.Close()
+				err2 := eie.Close()
 				So(err2, ShouldBeNil)
 			})
 
@@ -390,7 +391,7 @@ func TestRunehammer(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -403,12 +404,12 @@ func TestRunehammer(t *testing.T) {
 				)
 
 				// 关闭引擎
-				err := engine.Close()
+				err := eie.Close()
 				So(err, ShouldBeNil)
 
 				// 关闭后调用Exec应该返回错误
 				ctx := context.Background()
-				result, err := engine.Exec(ctx, "test", map[string]interface{}{})
+				result, err := eie.Exec(ctx, "test", map[string]interface{}{})
 				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldContainSubstring, "引擎已关闭")
 
@@ -424,7 +425,7 @@ func TestRunehammer(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), "test").Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -435,12 +436,12 @@ func TestRunehammer(t *testing.T) {
 					nil,
 					false,
 				)
-				defer engine.Close()
+				defer eie.Close()
 
 				ctx := context.Background()
 
 				So(func() {
-					engine.Exec(ctx, "test", map[string]interface{}{})
+					eie.Exec(ctx, "test", map[string]interface{}{})
 				}, ShouldNotPanic)
 			})
 
@@ -448,7 +449,7 @@ func TestRunehammer(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -459,12 +460,12 @@ func TestRunehammer(t *testing.T) {
 					nil,
 					false,
 				)
-				defer engine.Close()
+				defer eie.Close()
 
 				ctx := context.WithValue(context.Background(), "request_id", "req-123")
 
 				So(func() {
-					engine.Exec(ctx, "test", map[string]interface{}{})
+					eie.Exec(ctx, "test", map[string]interface{}{})
 				}, ShouldNotPanic)
 			})
 
@@ -472,7 +473,7 @@ func TestRunehammer(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -483,13 +484,13 @@ func TestRunehammer(t *testing.T) {
 					nil,
 					false,
 				)
-				defer engine.Close()
+				defer eie.Close()
 
 				ctx, cancel := context.WithCancel(context.Background())
 				cancel() // 立即取消
 
 				// 取消的上下文应该导致快速失败
-				result, err := engine.Exec(ctx, "test", map[string]interface{}{})
+				result, err := eie.Exec(ctx, "test", map[string]interface{}{})
 				So(err, ShouldNotBeNil)
 
 				var zeroValue string
@@ -500,7 +501,7 @@ func TestRunehammer(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -511,11 +512,11 @@ func TestRunehammer(t *testing.T) {
 					nil,
 					false,
 				)
-				defer engine.Close()
+				defer eie.Close()
 
 				// context.TODO()应该不会panic，但可能返回错误
 				So(func() {
-					engine.Exec(context.TODO(), "test", map[string]any{})
+					eie.Exec(context.TODO(), "test", map[string]any{})
 				}, ShouldNotPanic)
 			})
 		})
@@ -526,7 +527,7 @@ func TestRunehammer(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -537,7 +538,7 @@ func TestRunehammer(t *testing.T) {
 					nil,
 					false,
 				)
-				defer engine.Close()
+				defer eie.Close()
 
 				ctx := context.Background()
 
@@ -550,7 +551,7 @@ func TestRunehammer(t *testing.T) {
 
 				for _, code := range normalCodes {
 					So(func() {
-						engine.Exec(ctx, code, map[string]interface{}{})
+						eie.Exec(ctx, code, map[string]interface{}{})
 					}, ShouldNotPanic)
 				}
 			})
@@ -559,7 +560,7 @@ func TestRunehammer(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -570,12 +571,12 @@ func TestRunehammer(t *testing.T) {
 					nil,
 					false,
 				)
-				defer engine.Close()
+				defer eie.Close()
 
 				ctx := context.Background()
 
 				// 空业务码应该返回错误
-				result, err := engine.Exec(ctx, "", map[string]interface{}{})
+				result, err := eie.Exec(ctx, "", map[string]interface{}{})
 				So(err, ShouldNotBeNil)
 
 				var zeroValue string
@@ -586,7 +587,7 @@ func TestRunehammer(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -597,7 +598,7 @@ func TestRunehammer(t *testing.T) {
 					nil,
 					false,
 				)
-				defer engine.Close()
+				defer eie.Close()
 
 				ctx := context.Background()
 
@@ -612,7 +613,7 @@ func TestRunehammer(t *testing.T) {
 
 				for _, code := range specialCodes {
 					So(func() {
-						engine.Exec(ctx, code, map[string]interface{}{})
+						eie.Exec(ctx, code, map[string]interface{}{})
 					}, ShouldNotPanic)
 				}
 			})
@@ -624,7 +625,7 @@ func TestRunehammer(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -635,7 +636,7 @@ func TestRunehammer(t *testing.T) {
 					nil,
 					false,
 				)
-				defer engine.Close()
+				defer eie.Close()
 
 				concurrency := 50
 				done := make(chan bool, concurrency)
@@ -658,7 +659,7 @@ func TestRunehammer(t *testing.T) {
 
 						// 执行多次调用
 						for j := 0; j < 10; j++ {
-							engine.Exec(ctx, bizCode, input)
+							eie.Exec(ctx, bizCode, input)
 						}
 					}(i)
 				}
@@ -676,7 +677,7 @@ func TestRunehammer(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -703,7 +704,7 @@ func TestRunehammer(t *testing.T) {
 
 						ctx := context.Background()
 						for j := 0; j < 100; j++ {
-							engine.Exec(ctx, "test", map[string]interface{}{})
+							eie.Exec(ctx, "test", map[string]interface{}{})
 						}
 					}(i)
 				}
@@ -717,7 +718,7 @@ func TestRunehammer(t *testing.T) {
 						done <- true
 					}()
 
-					engine.Close()
+					eie.Close()
 				}()
 
 				// 等待所有goroutine完成
@@ -740,7 +741,7 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 
 			Convey("数据库连接失败后重连", func() {
 				// 创建一个会失败的数据库引擎
-				engine, err := New[TestResult](
+				eie, err := New[TestResult](
 					WithDSN("invalid://invalid_db"),
 					WithAutoMigrate(),
 					WithLogger(logger.NewNoopLogger()),
@@ -748,33 +749,33 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 
 				// 应该返回错误
 				So(err, ShouldNotBeNil)
-				So(engine, ShouldBeNil)
+				So(eie, ShouldBeNil)
 
 				// 使用正确的配置重新创建
-				engine, err = New[TestResult](
+				eie, err = New[TestResult](
 					WithTestSQLite("recovery_test"),
 					WithAutoMigrate(),
 					WithLogger(logger.NewNoopLogger()),
 				)
 				So(err, ShouldBeNil)
-				So(engine, ShouldNotBeNil)
-				defer engine.Close()
+				So(eie, ShouldNotBeNil)
+				defer eie.Close()
 			})
 
 			Convey("数据库操作错误处理", func() {
-				engine, err := New[TestResult](
+				eie, err := New[TestResult](
 					WithTestSQLite("fault_test"),
 					WithAutoMigrate(),
 					WithLogger(logger.NewNoopLogger()),
 				)
 				So(err, ShouldBeNil)
-				So(engine, ShouldNotBeNil)
-				defer engine.Close()
+				So(eie, ShouldNotBeNil)
+				defer eie.Close()
 
 				ctx := context.Background()
 
 				// 测试不存在的业务码
-				result, err := engine.Exec(ctx, "nonexistent_biz_code", map[string]interface{}{
+				result, err := eie.Exec(ctx, "nonexistent_biz_code", map[string]interface{}{
 					"test": "data",
 				})
 
@@ -788,33 +789,33 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 
 		Convey("规则解析错误恢复", func() {
 
-			// 删除了包含非法类型转换 engine.(*engineImpl[TestResult]).config.GetDB() 的测试
+			// 删除了包含非法类型转换 eie.(*engineImpl[TestResult]).config.GetDB() 的测试
 			// 这类测试直接访问非导出结构体内部实现，违反了封装原则
 
-			// 删除了包含非法类型转换 engine.(*engineImpl[TestResult]).config.GetDB() 的测试
+			// 删除了包含非法类型转换 eie.(*engineImpl[TestResult]).config.GetDB() 的测试
 			// 违反了封装原则，不应在测试中直接访问内部实现
 		})
 
 		Convey("内存泄漏防护", func() {
 
-			// 删除了包含非法类型转换 engine.(*engineImpl[TestResult]).config.GetDB() 的测试
+			// 删除了包含非法类型转换 eie.(*engineImpl[TestResult]).config.GetDB() 的测试
 			// 违反了封装原则，不应在测试中直接访问内部实现
 
-			// 删除了包含非法类型转换 engine.(*engineImpl[TestResult]).config.GetDB() 的测试
+			// 删除了包含非法类型转换 eie.(*engineImpl[TestResult]).config.GetDB() 的测试
 			// 违反了封装原则，不应在测试中直接访问内部实现
 		})
 
 		Convey("边界条件容错", func() {
 
 			Convey("极端输入数据", func() {
-				engine, err := New[TestResult](
+				eie, err := New[TestResult](
 					WithTestSQLite("extreme_input_test"),
 					WithAutoMigrate(),
 					WithLogger(logger.NewNoopLogger()),
 				)
 				So(err, ShouldBeNil)
-				So(engine, ShouldNotBeNil)
-				defer engine.Close()
+				So(eie, ShouldNotBeNil)
+				defer eie.Close()
 
 				ctx := context.Background()
 
@@ -841,22 +842,22 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 				for i, input := range extremeInputs {
 					// 所有极端输入都应该被优雅处理，不应该panic
 					So(func() {
-						engine.Exec(ctx, fmt.Sprintf("extreme_test_%d", i), input)
+						eie.Exec(ctx, fmt.Sprintf("extreme_test_%d", i), input)
 					}, ShouldNotPanic)
 				}
 			})
 
 			Convey("系统资源限制", func() {
 				// 测试在资源受限情况下的行为
-				engine, err := New[TestResult](
+				eie, err := New[TestResult](
 					WithTestSQLite("resource_test"),
 					WithAutoMigrate(),
 					WithMaxCacheSize(1), // 极小的缓存
 					WithLogger(logger.NewNoopLogger()),
 				)
 				So(err, ShouldBeNil)
-				So(engine, ShouldNotBeNil)
-				defer engine.Close()
+				So(eie, ShouldNotBeNil)
+				defer eie.Close()
 
 				ctx := context.Background()
 
@@ -869,7 +870,7 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 
 					// 应该能够处理资源限制而不panic
 					So(func() {
-						engine.Exec(ctx, "resource_limit_test", input)
+						eie.Exec(ctx, "resource_limit_test", input)
 					}, ShouldNotPanic)
 				}
 			})
@@ -895,7 +896,7 @@ func TestRunehammerIntegration(t *testing.T) {
 
 				// 创建不同配置的引擎实例
 				engines := []Engine[string]{
-					NewEngineImpl[string](
+					engine.NewEngineImpl[string](
 						&config.Config{DSN: "mock"},
 						mockMapper1,
 						cache.NewMemoryCache(1000),
@@ -906,7 +907,7 @@ func TestRunehammerIntegration(t *testing.T) {
 						nil,
 						false,
 					),
-					NewEngineImpl[string](
+					engine.NewEngineImpl[string](
 						&config.Config{DSN: "mock"},
 						mockMapper2,
 						nil, // 无缓存
@@ -922,15 +923,15 @@ func TestRunehammerIntegration(t *testing.T) {
 				ctx := context.Background()
 				input := map[string]interface{}{"test": "data"}
 
-				for i, engine := range engines {
+				for i, eie := range engines {
 					Convey(fmt.Sprintf("引擎 %d 接口兼容性", i), func() {
 						// 验证所有引擎都实现了Engine接口
-						So(engine, ShouldImplement, (*Engine[string])(nil))
+						So(eie, ShouldImplement, (*Engine[string])(nil))
 
 						// 验证所有方法都能正常调用
 						So(func() {
-							engine.Exec(ctx, "test_biz", input)
-							engine.Close()
+							eie.Exec(ctx, "test_biz", input)
+							eie.Close()
 						}, ShouldNotPanic)
 					})
 				}
@@ -943,7 +944,7 @@ func TestRunehammerIntegration(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[map[string]interface{}](
+				eie := engine.NewEngineImpl[map[string]interface{}](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -954,7 +955,7 @@ func TestRunehammerIntegration(t *testing.T) {
 					nil,
 					false,
 				)
-				defer engine.Close()
+				defer eie.Close()
 
 				ctx := context.Background()
 
@@ -999,7 +1000,7 @@ func TestRunehammerIntegration(t *testing.T) {
 				for _, tc := range testCases {
 					Convey("场景: "+tc.desc, func() {
 						So(func() {
-							result, err := engine.Exec(ctx, tc.bizCode, tc.input)
+							result, err := eie.Exec(ctx, tc.bizCode, tc.input)
 							// 即使返回错误（因为没有真实规则），也不应该panic
 							_ = result
 							_ = err
@@ -1015,7 +1016,7 @@ func TestRunehammerIntegration(t *testing.T) {
 				mockMapper := rule.NewMockRuleMapper(ctrl)
 				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
-				engine := NewEngineImpl[string](
+				eie := engine.NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
 					cache.NewMemoryCache(1000),
@@ -1026,7 +1027,7 @@ func TestRunehammerIntegration(t *testing.T) {
 					nil,
 					false,
 				)
-				defer engine.Close()
+				defer eie.Close()
 
 				ctx := context.Background()
 
@@ -1040,7 +1041,7 @@ func TestRunehammerIntegration(t *testing.T) {
 
 				for _, input := range invalidInputs {
 					So(func() {
-						engine.Exec(ctx, "test", input)
+						eie.Exec(ctx, "test", input)
 					}, ShouldNotPanic)
 				}
 			})
@@ -1048,10 +1049,10 @@ func TestRunehammerIntegration(t *testing.T) {
 
 		Convey("数据库引擎端到端集成测试", func() {
 
-			// 删除了包含非法类型转换 engine.(*engineImpl[map[string]interface{}]).config.db 的测试
+			// 删除了包含非法类型转换 eie.(*engineImpl[map[string]interface{}]).config.db 的测试
 			// 违反了封装原则，不应在测试中直接访问内部实现
 
-			// 删除了包含非法类型转换 engine.(*engineImpl[map[string]interface{}]).config.db 的测试
+			// 删除了包含非法类型转换 eie.(*engineImpl[map[string]interface{}]).config.db 的测试
 			// 违反了封装原则，不应在测试中直接访问内部实现
 		})
 
@@ -1059,8 +1060,8 @@ func TestRunehammerIntegration(t *testing.T) {
 
 			Convey("多种规则类型混合执行", func() {
 				// 创建动态引擎
-				dynamicEngine := NewDynamicEngine[map[string]interface{}](
-					DynamicEngineConfig{
+				dynamicEngine := engine.NewDynamicEngine[map[string]interface{}](
+					engine.DynamicEngineConfig{
 						EnableCache:       true,
 						CacheTTL:          time.Minute,
 						MaxCacheSize:      50,
@@ -1177,8 +1178,8 @@ func TestRunehammerIntegration(t *testing.T) {
 			})
 
 			Convey("基本类型输入测试", func() {
-				dynamicEngine := NewDynamicEngine[map[string]interface{}](
-					DynamicEngineConfig{
+				dynamicEngine := engine.NewDynamicEngine[map[string]interface{}](
+					engine.DynamicEngineConfig{
 						EnableCache: true,
 					},
 				)
@@ -1215,8 +1216,8 @@ func TestRunehammerIntegration(t *testing.T) {
 			})
 
 			Convey("批量规则并行执行", func() {
-				dynamicEngine := NewDynamicEngine[map[string]interface{}](
-					DynamicEngineConfig{
+				dynamicEngine := engine.NewDynamicEngine[map[string]interface{}](
+					engine.DynamicEngineConfig{
 						EnableCache:       true,
 						ParallelExecution: true,
 						MaxCacheSize:      100,
@@ -1291,7 +1292,7 @@ func TestRunehammerIntegration(t *testing.T) {
 		Convey("规则生命周期集成测试", func() {
 
 			Convey("规则版本管理", func() {
-				engine, err := New[map[string]interface{}](
+				eie, err := New[map[string]interface{}](
 					WithDSN("sqlite:file:version_test.db?mode=memory&cache=shared&_fk=1"),
 					WithAutoMigrate(),
 					WithCache(cache.NewMemoryCache(50)),
@@ -1302,13 +1303,13 @@ func TestRunehammerIntegration(t *testing.T) {
 					SkipConvey("需要SQLite支持，跳过该测试", func() {})
 					return
 				}
-				defer engine.Close()
+				defer eie.Close()
 
 				ctx := context.Background()
 
 				// 测试引擎创建和基本功能
 				// 执行不存在的规则
-				_, err1 := engine.Exec(ctx, "VERSION_TEST", map[string]interface{}{})
+				_, err1 := eie.Exec(ctx, "VERSION_TEST", map[string]interface{}{})
 				So(err1, ShouldNotBeNil)
 				So(err1.Error(), ShouldContainSubstring, "规则未找到")
 
@@ -1316,7 +1317,7 @@ func TestRunehammerIntegration(t *testing.T) {
 				So(func() {
 					// 模拟一些操作后的状态
 					for i := 0; i < 10; i++ {
-						engine.Exec(ctx, fmt.Sprintf("TEST_%d", i), map[string]interface{}{})
+						eie.Exec(ctx, fmt.Sprintf("TEST_%d", i), map[string]interface{}{})
 					}
 				}, ShouldNotPanic)
 			})
@@ -1325,7 +1326,7 @@ func TestRunehammerIntegration(t *testing.T) {
 		Convey("错误恢复与容错性", func() {
 
 			Convey("规则执行失败后的恢复", func() {
-				engine, err := New[map[string]interface{}](
+				eie, err := New[map[string]interface{}](
 					WithDSN("sqlite:file:error_test.db?mode=memory&cache=shared&_fk=1"),
 					WithAutoMigrate(),
 					WithLogger(logger.NewNoopLogger()),
@@ -1335,24 +1336,24 @@ func TestRunehammerIntegration(t *testing.T) {
 					SkipConvey("需要SQLite支持，跳过该测试", func() {})
 					return
 				}
-				defer engine.Close()
+				defer eie.Close()
 
 				ctx := context.Background()
 
 				// 执行不存在的规则（应该失败但不崩溃）
-				result1, err1 := engine.Exec(ctx, "ERROR_TEST", map[string]interface{}{"validField": 123})
+				result1, err1 := eie.Exec(ctx, "ERROR_TEST", map[string]interface{}{"validField": 123})
 				So(err1, ShouldNotBeNil)    // 应该返回错误
 				So(result1, ShouldNotBeNil) // 但应该返回空结果而不是nil
 				So(err1.Error(), ShouldContainSubstring, "规则未找到")
 
 				// 执行另一个不存在的规则（应该成功处理）
-				result2, err2 := engine.Exec(ctx, "GOOD_TEST", map[string]interface{}{})
+				result2, err2 := eie.Exec(ctx, "GOOD_TEST", map[string]interface{}{})
 				So(err2, ShouldNotBeNil)    // 同样返回规则未找到错误
 				So(result2, ShouldNotBeNil) // 返回空结果
 				So(err2.Error(), ShouldContainSubstring, "规则未找到")
 
 				// 再次执行规则，确保引擎状态正常
-				result3, err3 := engine.Exec(ctx, "ANOTHER_TEST", map[string]interface{}{})
+				result3, err3 := eie.Exec(ctx, "ANOTHER_TEST", map[string]interface{}{})
 				So(err3, ShouldNotBeNil)
 				So(result3, ShouldNotBeNil)
 				So(err3.Error(), ShouldContainSubstring, "规则未找到")

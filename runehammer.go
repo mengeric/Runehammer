@@ -11,6 +11,7 @@ import (
 	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
+	"gitee.com/damengde/runehammer/engine"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
@@ -322,7 +323,7 @@ func New[T any](opts ...Option) (Engine[T], error) {
 	}
 
 	// 4. 创建引擎实例（暂时保持向后兼容）
-	eng := NewEngineImpl[T](
+    eng := engine.NewEngineImpl[T](
 		cfg,            // 仍然传递Config保持兼容性
 		ctx.RuleMapper, // 但使用RuntimeContext中的实例
 		ctx.Cache,

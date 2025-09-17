@@ -1,4 +1,4 @@
-package runehammer
+package engine
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"gitee.com/damengde/runehammer/rule"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/hyperjumptech/grule-rule-engine/builder"
-	"github.com/hyperjumptech/grule-rule-engine/engine"
+	grengine "github.com/hyperjumptech/grule-rule-engine/engine"
 	"github.com/hyperjumptech/grule-rule-engine/pkg"
 	"github.com/robfig/cron/v3"
 )
@@ -121,7 +121,7 @@ func (e *engineImpl[T]) Exec(ctx context.Context, bizCode string, input any) (T,
 
 	// 5. 创建数据上下文和规则引擎
 	dataCtx := ast.NewDataContext()
-	ruleEngine := engine.NewGruleEngine()
+	ruleEngine := grengine.NewGruleEngine()
 
 	// 6. 注入输入数据
 	if err := e.injectInputData(dataCtx, input); err != nil {

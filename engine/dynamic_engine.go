@@ -1,6 +1,6 @@
-package runehammer
+package engine
 
-//go:generate mockgen -source=dynamic_engine.go -destination=dynamic_engine_mock.go -package=runehammer
+//go:generate mockgen -source=dynamic_engine.go -destination=dynamic_engine_mock.go -package=engine
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"gitee.com/damengde/runehammer/rule"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/hyperjumptech/grule-rule-engine/builder"
-	"github.com/hyperjumptech/grule-rule-engine/engine"
+	grengine "github.com/hyperjumptech/grule-rule-engine/engine"
 	"github.com/hyperjumptech/grule-rule-engine/pkg"
 )
 
@@ -281,7 +281,7 @@ func (e *DynamicEngine[T]) executeWithKnowledgeBase(
 	}
 
 	// 创建规则引擎
-	ruleEngine := engine.NewGruleEngine()
+    ruleEngine := grengine.NewGruleEngine()
 
 	// 验证知识库不为空
 	if knowledgeBase == nil {
