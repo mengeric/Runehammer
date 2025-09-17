@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gitee.com/damengde/runehammer/config"
+	logger "gitee.com/damengde/runehammer/logger"
 	"github.com/robfig/cron/v3"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.uber.org/mock/gomock"
@@ -34,7 +35,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -68,7 +69,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -98,7 +99,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -124,7 +125,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -153,7 +154,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -176,7 +177,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewDefaultLogger(),
+					logger.NewDefaultLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -198,7 +199,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -235,7 +236,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -281,7 +282,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -316,7 +317,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					cache,
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -354,7 +355,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					cache,
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -389,7 +390,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewDefaultLogger(),
+					logger.NewDefaultLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -412,7 +413,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -459,7 +460,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 			Convey("完整配置的统计信息", func() {
 				cache := NewMemoryCache(1000)
-				logger := NewDefaultLogger()
+				logger := logger.NewDefaultLogger()
 				syncInterval := 5 * time.Minute
 
 				config := &config.Config{
@@ -503,7 +504,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -526,7 +527,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -553,7 +554,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 			Convey("完整生命周期流程", func() {
 				cache := NewMemoryCache(1000)
-				logger := NewNoopLogger() // 使用NoopLogger避免测试输出干扰
+				logger := logger.NewNoopLogger() // 使用NoopLogger避免测试输出干扰
 
 				config := &config.Config{
 					DSN:          "mock",
@@ -620,7 +621,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -709,7 +710,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					cache,
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -759,7 +760,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -783,7 +784,7 @@ func TestEngineLifecycle(t *testing.T) {
 						NewMockRuleMapper(ctrl),
 						NewMemoryCache(1000),
 						CacheKeyBuilder{},
-						NewNoopLogger(),
+						logger.NewNoopLogger(),
 						nil,
 						&sync.Map{},
 						cron.New(),
@@ -804,7 +805,7 @@ func TestEngineLifecycle(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -842,7 +843,7 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -868,7 +869,7 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -896,7 +897,7 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -941,7 +942,7 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),
@@ -979,7 +980,7 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 					NewMockRuleMapper(ctrl),
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
 					cron.New(),

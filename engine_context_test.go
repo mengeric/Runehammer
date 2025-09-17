@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"gitee.com/damengde/runehammer/config"
+	logger "gitee.com/damengde/runehammer/logger"
 	"go.uber.org/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
@@ -23,12 +24,12 @@ func TestEngineContext(t *testing.T) {
 		mapper := NewMockRuleMapper(ctrl)
 		cache := NewMockCache(ctrl)
 		cacheKeys := CacheKeyBuilder{}
-		logger := NewNoopLogger()
+		lgr := logger.NewNoopLogger()
 		knowledgeLibrary := ast.NewKnowledgeLibrary()
 		cronScheduler := cron.New()
 		
 		engine := NewEngineImpl[map[string]any](
-			cfg, mapper, cache, cacheKeys, logger,
+			cfg, mapper, cache, cacheKeys, lgr,
 			knowledgeLibrary, &sync.Map{}, cronScheduler, false,
 		)
 		
@@ -257,7 +258,7 @@ func TestEngineContext(t *testing.T) {
 				
 				// 创建专门用于结构体类型的引擎
 				structEngine := NewEngineImpl[ResultStruct](
-					cfg, mapper, cache, cacheKeys, logger,
+					cfg, mapper, cache, cacheKeys, lgr,
 					knowledgeLibrary, &sync.Map{}, cronScheduler, false,
 				)
 				
@@ -402,14 +403,14 @@ func TestExtractResultFunctions(t *testing.T) {
 		mapper := NewMockRuleMapper(ctrl)
 		cache := NewMockCache(ctrl)
 		cacheKeys := CacheKeyBuilder{}
-		logger := NewNoopLogger()
+		lgr := logger.NewNoopLogger()
 		knowledgeLibrary := ast.NewKnowledgeLibrary()
 		cronScheduler := cron.New()
 
 		Convey("extractInterfaceResult 函数", func() {
 			// 创建 interface{} 类型引擎
 			interfaceEngine := NewEngineImpl[any](
-				cfg2, mapper, cache, cacheKeys, logger,
+				cfg2, mapper, cache, cacheKeys, lgr,
 				knowledgeLibrary, &sync.Map{}, cronScheduler, false,
 			)
 
@@ -439,7 +440,7 @@ func TestExtractResultFunctions(t *testing.T) {
 		Convey("extractMapResult 函数", func() {
 			// 创建 map 类型引擎
 			mapEngine := NewEngineImpl[map[string]any](
-				cfg2, mapper, cache, cacheKeys, logger,
+				cfg2, mapper, cache, cacheKeys, lgr,
 				knowledgeLibrary, &sync.Map{}, cronScheduler, false,
 			)
 
@@ -495,7 +496,7 @@ func TestExtractResultFunctions(t *testing.T) {
 
 			// 创建指针类型引擎
 			ptrEngine := NewEngineImpl[*TestStruct](
-				cfg2, mapper, cache, cacheKeys, logger,
+				cfg2, mapper, cache, cacheKeys, lgr,
 				knowledgeLibrary, &sync.Map{}, cronScheduler, false,
 			)
 
@@ -529,7 +530,7 @@ func TestExtractResultFunctions(t *testing.T) {
 
 			// 创建泛型结构体引擎
 			genericEngine := NewEngineImpl[GenericStruct](
-				cfg2, mapper, cache, cacheKeys, logger,
+				cfg2, mapper, cache, cacheKeys, lgr,
 				knowledgeLibrary, &sync.Map{}, cronScheduler, false,
 			)
 
@@ -595,7 +596,7 @@ func TestExtractResultFunctions(t *testing.T) {
 		Convey("完整结果提取流程", func() {
 			// 测试 extractResult 主函数
 			engine := NewEngineImpl[map[string]any](
-				cfg2, mapper, cache, cacheKeys, logger,
+				cfg2, mapper, cache, cacheKeys, lgr,
 				knowledgeLibrary, &sync.Map{}, cronScheduler, false,
 			)
 

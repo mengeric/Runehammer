@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gitee.com/damengde/runehammer/config"
+	logger "gitee.com/damengde/runehammer/logger"
 	"go.uber.org/mock/gomock"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/robfig/cron/v3"
@@ -24,12 +25,12 @@ func TestEngineFunctions(t *testing.T) {
 		mapper := NewMockRuleMapper(ctrl)
 		cache := NewMockCache(ctrl)
 		cacheKeys := CacheKeyBuilder{}
-		logger := NewNoopLogger()
+		lgr := logger.NewNoopLogger()
 		knowledgeLibrary := ast.NewKnowledgeLibrary()
 		cronScheduler := cron.New()
 
 		engine := NewEngineImpl[map[string]any](
-			cfg, mapper, cache, cacheKeys, logger,
+			cfg, mapper, cache, cacheKeys, lgr,
 			knowledgeLibrary, &sync.Map{}, cronScheduler, false,
 		)
 
@@ -511,12 +512,12 @@ func TestEngineFunctionsMissing(t *testing.T) {
 		mapper := NewMockRuleMapper(ctrl)
 		cache := NewMockCache(ctrl)
 		cacheKeys := CacheKeyBuilder{}
-		logger := NewNoopLogger()
+		lgr := logger.NewNoopLogger()
 		knowledgeLibrary := ast.NewKnowledgeLibrary()
 		cronScheduler := cron.New()
 
 		engine := NewEngineImpl[map[string]any](
-			cfg, mapper, cache, cacheKeys, logger,
+			cfg, mapper, cache, cacheKeys, lgr,
 			knowledgeLibrary, &sync.Map{}, cronScheduler, false,
 		)
 

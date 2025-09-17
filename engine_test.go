@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	logger "gitee.com/damengde/runehammer/logger"
 	. "github.com/smartystreets/goconvey/convey"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -24,7 +25,7 @@ func TestEngine(t *testing.T) {
 			engine, err := New[map[string]any](
 				WithDB(db),
 				WithDisableCache(),
-				WithLogger(NewNoopLogger()),
+				WithLogger(logger.NewNoopLogger()),
 			)
 			So(err, ShouldBeNil)
 			So(engine, ShouldNotBeNil)
@@ -34,7 +35,7 @@ func TestEngine(t *testing.T) {
 			engine, err := New[map[string]any](
 				WithDB(db),
 				WithDisableCache(),
-				WithLogger(NewNoopLogger()),
+				WithLogger(logger.NewNoopLogger()),
 			)
 			So(err, ShouldBeNil)
 

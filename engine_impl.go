@@ -3,11 +3,13 @@ package runehammer
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
 
 	"gitee.com/damengde/runehammer/config"
+	logger "gitee.com/damengde/runehammer/logger"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/hyperjumptech/grule-rule-engine/builder"
 	"github.com/hyperjumptech/grule-rule-engine/engine"
@@ -26,7 +28,7 @@ type engineImpl[T any] struct {
 	mapper    RuleMapper     // 规则数据访问接口
 	cache     Cache           // 缓存接口（Redis或内存）
 	cacheKeys CacheKeyBuilder // 缓存键构建器
-	logger    Logger        // 日志接口 - 使用interface{}避免循环依赖
+	logger    logger.Logger // 日志接口
 
 	// Grule引擎相关
 	knowledgeLibrary *ast.KnowledgeLibrary // Grule知识库
@@ -44,7 +46,7 @@ func NewEngineImpl[T any](
 	mapper RuleMapper,
 	cache Cache,
 	cacheKeys CacheKeyBuilder,
-	logger Logger,
+	logger logger.Logger,
 	knowledgeLibrary *ast.KnowledgeLibrary,
 	knowledgeBases *sync.Map,
 	cron *cron.Cron,
@@ -94,14 +96,16 @@ func (e *engineImpl[T]) Exec(ctx context.Context, bizCode string, input any) (T,
 		if e.logger != nil {
 			e.logger.Errorf(ctx, "获取规则失败", "bizCode", bizCode, "error", err)
 		}
-		return zero, fmt.Errorf("未定义错误: 规则未找到")
+		// 返回空结果而不是nil
+		return e.createEmptyResult(), fmt.Errorf("未定义错误: 规则未找到")
 	}
 
 	if len(rules) == 0 {
 		if e.logger != nil {
 			e.logger.Warnf(ctx, "未找到有效规则", "bizCode", bizCode)
 		}
-		return zero, fmt.Errorf("未定义错误: 规则未找到")
+		// 返回空结果而不是nil
+		return e.createEmptyResult(), fmt.Errorf("未定义错误: 规则未找到")
 	}
 
 	// 4. 编译规则
@@ -286,4 +290,19 @@ func (e *engineImpl[T]) Close() error {
 	}
 
 	return nil
+}
+
+// createEmptyResult 创建空结果，根据泛型类型返回合适的零值
+func (e *engineImpl[T]) createEmptyResult() T {
+	var result T
+	resultType := reflect.TypeOf(result)
+	
+	// 如果是map类型，返回空map而不是nil
+	if resultType != nil && resultType.Kind() == reflect.Map {
+		emptyMap := reflect.MakeMap(resultType)
+		return emptyMap.Interface().(T)
+	}
+	
+	// 其他类型返回零值
+	return result
 }

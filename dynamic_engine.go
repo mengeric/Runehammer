@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	logger "gitee.com/damengde/runehammer/logger"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/hyperjumptech/grule-rule-engine/builder"
 	"github.com/hyperjumptech/grule-rule-engine/engine"
@@ -28,7 +29,7 @@ type DynamicEngine[T any] struct {
 	knowledgeLibrary *ast.KnowledgeLibrary  // Grule知识库
 	customFunctions  map[string]interface{} // 自定义函数库
 	validators       []RuleValidator        // 规则验证器
-	logger           Logger                 // 日志记录器
+	logger           logger.Logger         // 日志记录器
 	cache            *DynamicRuleCache      // 规则缓存（可选）
 	config           DynamicEngineConfig    // 引擎配置
 }
@@ -206,7 +207,7 @@ func (e *DynamicEngine[T]) RegisterValidator(validator RuleValidator) {
 }
 
 // SetLogger 设置日志记录器
-func (e *DynamicEngine[T]) SetLogger(logger Logger) {
+func (e *DynamicEngine[T]) SetLogger(logger logger.Logger) {
 	e.logger = logger
 }
 
@@ -393,11 +394,8 @@ func (e *DynamicEngine[T]) injectInputData(dataCtx ast.IDataContext, input any) 
 
 // injectStructData 注入结构体数据 - 将整个结构体作为单个对象注入
 func (e *DynamicEngine[T]) injectStructData(dataCtx ast.IDataContext, input any, t reflect.Type) error {
-	// 使用结构体类型名作为变量名，转为小写
-	inputName := strings.ToLower(t.Name())
-	if inputName == "" {
-		inputName = "Params" // 匿名结构体使用统一的Params名称
-	}
+	// 统一使用Params作为输入变量名，保持与引擎一致
+	inputName := "Params"
 
 	if err := dataCtx.Add(inputName, input); err != nil {
 		return fmt.Errorf("注入结构体 %s 失败: %w", inputName, err)
@@ -484,12 +482,28 @@ func (e *DynamicEngine[T]) extractResult(dataCtx ast.IDataContext) (T, error) {
 		return zero, fmt.Errorf("获取结果值失败: %w", err)
 	}
 
-	// 将结果转换为目标类型
-	if typedResult, ok := resultValue.Interface().(T); ok {
+	// 获取实际的interface{}值
+	actualData := resultValue.Interface()
+
+	// 根据泛型类型进行相应的转换
+	var result T
+	resultType := reflect.TypeOf(result)
+
+	if resultType.Kind() == reflect.Map {
+		// 如果目标类型是map，直接转换
+		if mapResult, ok := actualData.(map[string]interface{}); ok {
+			if typedResult, ok := interface{}(mapResult).(T); ok {
+				return typedResult, nil
+			}
+		}
+	}
+
+	// 尝试直接类型转换
+	if typedResult, ok := actualData.(T); ok {
 		return typedResult, nil
 	}
 
-	return zero, fmt.Errorf("结果类型转换失败，期望类型 %T，实际类型 %T", zero, resultValue.Interface())
+	return zero, fmt.Errorf("结果类型转换失败，期望类型 %T，实际类型 %T", zero, actualData)
 }
 
 // validateRuleDefinition 验证规则定义

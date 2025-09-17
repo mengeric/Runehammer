@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	logger "gitee.com/damengde/runehammer/logger"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -301,7 +302,7 @@ func TestDynamicEngine(t *testing.T) {
 			})
 
 			Convey("设置日志器", func() {
-				logger := NewNoopLogger()
+				logger := logger.NewNoopLogger()
 				engine.SetLogger(logger)
 				// 验证日志器设置成功（通过后续操作不出错来验证）
 				So(func() { engine.SetLogger(logger) }, ShouldNotPanic)

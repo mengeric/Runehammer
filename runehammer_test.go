@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gitee.com/damengde/runehammer/config"
+	logger "gitee.com/damengde/runehammer/logger"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.uber.org/mock/gomock"
 )
@@ -61,7 +62,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -89,7 +90,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -108,7 +109,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -124,7 +125,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -158,7 +159,7 @@ func TestRunehammer(t *testing.T) {
 					engine, err := New[map[string]interface{}](
 						WithDSN("mysql://user:pass@localhost/test"),
 						WithCache(NewMemoryCache(1000)),
-						WithLogger(NewDefaultLogger()),
+						WithLogger(logger.NewDefaultLogger()),
 						WithAutoMigrate(),
 					)
 					So(err, ShouldBeNil)
@@ -201,7 +202,7 @@ func TestRunehammer(t *testing.T) {
 					mapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -229,7 +230,7 @@ func TestRunehammer(t *testing.T) {
 					mapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -276,7 +277,7 @@ func TestRunehammer(t *testing.T) {
 					mapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -290,7 +291,7 @@ func TestRunehammer(t *testing.T) {
 					mapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -309,7 +310,7 @@ func TestRunehammer(t *testing.T) {
 					mapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -346,7 +347,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -367,7 +368,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -392,7 +393,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -426,7 +427,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -450,7 +451,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -474,7 +475,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -502,7 +503,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -510,9 +511,9 @@ func TestRunehammer(t *testing.T) {
 				)
 				defer engine.Close()
 
-				// nil上下文应该不会panic，但可能返回错误
+				// context.TODO()应该不会panic，但可能返回错误
 				So(func() {
-					engine.Exec(nil, "test", map[string]interface{}{})
+					engine.Exec(context.TODO(), "test", map[string]any{})
 				}, ShouldNotPanic)
 			})
 		})
@@ -528,7 +529,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -561,7 +562,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -588,7 +589,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -626,7 +627,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -678,7 +679,7 @@ func TestRunehammer(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -740,7 +741,7 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 				engine, err := New[TestResult](
 					WithDSN("invalid://invalid_db"),
 					WithAutoMigrate(),
-					WithLogger(NewNoopLogger()),
+					WithLogger(logger.NewNoopLogger()),
 				)
 
 				// 应该返回错误
@@ -751,7 +752,7 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 				engine, err = New[TestResult](
 					WithTestSQLite("recovery_test"),
 					WithAutoMigrate(),
-					WithLogger(NewNoopLogger()),
+					WithLogger(logger.NewNoopLogger()),
 				)
 				So(err, ShouldBeNil)
 				So(engine, ShouldNotBeNil)
@@ -762,7 +763,7 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 				engine, err := New[TestResult](
 					WithTestSQLite("fault_test"),
 					WithAutoMigrate(),
-					WithLogger(NewNoopLogger()),
+					WithLogger(logger.NewNoopLogger()),
 				)
 				So(err, ShouldBeNil)
 				So(engine, ShouldNotBeNil)
@@ -807,7 +808,7 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 				engine, err := New[TestResult](
 					WithTestSQLite("extreme_input_test"),
 					WithAutoMigrate(),
-					WithLogger(NewNoopLogger()),
+					WithLogger(logger.NewNoopLogger()),
 				)
 				So(err, ShouldBeNil)
 				So(engine, ShouldNotBeNil)
@@ -849,7 +850,7 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 					WithTestSQLite("resource_test"),
 					WithAutoMigrate(),
 					WithMaxCacheSize(1), // 极小的缓存
-					WithLogger(NewNoopLogger()),
+					WithLogger(logger.NewNoopLogger()),
 				)
 				So(err, ShouldBeNil)
 				So(engine, ShouldNotBeNil)
@@ -897,7 +898,7 @@ func TestRunehammerIntegration(t *testing.T) {
 						mockMapper1,
 						NewMemoryCache(1000),
 						CacheKeyBuilder{},
-						NewNoopLogger(),
+						logger.NewNoopLogger(),
 						nil,
 						nil,
 						nil,
@@ -908,7 +909,7 @@ func TestRunehammerIntegration(t *testing.T) {
 						mockMapper2,
 						nil, // 无缓存
 						CacheKeyBuilder{},
-						NewDefaultLogger(),
+						logger.NewDefaultLogger(),
 						nil,
 						nil,
 						nil,
@@ -945,7 +946,7 @@ func TestRunehammerIntegration(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -1017,7 +1018,7 @@ func TestRunehammerIntegration(t *testing.T) {
 					mockMapper,
 					NewMemoryCache(1000),
 					CacheKeyBuilder{},
-					NewNoopLogger(),
+					logger.NewNoopLogger(),
 					nil,
 					nil,
 					nil,
@@ -1117,10 +1118,10 @@ func TestRunehammerIntegration(t *testing.T) {
 
 				result2, err2 := dynamicEngine.ExecuteRuleDefinition(ctx, metricRule, input)
 				So(err2, ShouldBeNil)
-				So(result2["CustomerScore"], ShouldNotBeNil)
+				So(result2["customer_score"], ShouldNotBeNil)
 
 				// 验证计算结果 (30*0.1 + 80000*0.0001 + 3*10 = 3 + 8 + 30 = 41)
-				score, ok := result2["CustomerScore"].(float64)
+				score, ok := result2["customer_score"].(float64)
 				So(ok, ShouldBeTrue)
 				So(score, ShouldEqual, 41)
 
@@ -1292,7 +1293,7 @@ func TestRunehammerIntegration(t *testing.T) {
 					WithDSN("sqlite:file:version_test.db?mode=memory&cache=shared&_fk=1"),
 					WithAutoMigrate(),
 					WithCache(NewMemoryCache(50)),
-					WithLogger(NewNoopLogger()),
+					WithLogger(logger.NewNoopLogger()),
 				)
 
 				if err != nil {
@@ -1325,7 +1326,7 @@ func TestRunehammerIntegration(t *testing.T) {
 				engine, err := New[map[string]interface{}](
 					WithDSN("sqlite:file:error_test.db?mode=memory&cache=shared&_fk=1"),
 					WithAutoMigrate(),
-					WithLogger(NewNoopLogger()),
+					WithLogger(logger.NewNoopLogger()),
 				)
 
 				if err != nil {

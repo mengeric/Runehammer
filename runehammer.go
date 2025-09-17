@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gitee.com/damengde/runehammer/config"
+	logger "gitee.com/damengde/runehammer/logger"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/robfig/cron/v3"
 	"gorm.io/gorm"
@@ -422,7 +423,7 @@ func WithCache(cache Cache) Option {
 }
 
 // WithLogger 配置日志实例（向后兼容）
-func WithLogger(logger Logger) Option {
+func WithLogger(logger logger.Logger) Option {
 	return func(c *config.Config) {
 		// 这个函数的实际处理在NewRuntimeContext中
 		// 这里只是标记
@@ -446,7 +447,7 @@ func WithCacheInstance(cache Cache) ContextOption {
 }
 
 // WithLoggerInstance 使用指定的日志实例
-func WithLoggerInstance(logger Logger) ContextOption {
+func WithLoggerInstance(logger logger.Logger) ContextOption {
 	return func(ctx *RuntimeContext) error {
 		ctx.Logger = logger
 		return nil

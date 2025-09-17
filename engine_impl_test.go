@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"gitee.com/damengde/runehammer/config"
+	logger "gitee.com/damengde/runehammer/logger"
 	"go.uber.org/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
@@ -25,13 +26,13 @@ func TestEngineImpl(t *testing.T) {
 			mapper := NewMockRuleMapper(ctrl)
 			cache := NewMockCache(ctrl)
 			cacheKeys := CacheKeyBuilder{}
-			logger := NewNoopLogger()
+			lgr := logger.NewNoopLogger()
 			knowledgeLibrary := ast.NewKnowledgeLibrary()
 			knowledgeBases := &sync.Map{}
 			cronScheduler := cron.New()
 			
 			engine := NewEngineImpl[map[string]any](
-				cfg, mapper, cache, cacheKeys, logger,
+				cfg, mapper, cache, cacheKeys, lgr,
 				knowledgeLibrary, knowledgeBases, cronScheduler, false,
 			)
 			
@@ -43,13 +44,13 @@ func TestEngineImpl(t *testing.T) {
 			mapper := NewMockRuleMapper(ctrl)
 			cache := NewMockCache(ctrl)
 			cacheKeys := CacheKeyBuilder{}
-			logger := NewNoopLogger()
+			lgr := logger.NewNoopLogger()
 			knowledgeLibrary := ast.NewKnowledgeLibrary()
 			knowledgeBases := &sync.Map{}
 			cronScheduler := cron.New()
 			
 			engine := NewEngineImpl[map[string]any](
-				cfg, mapper, cache, cacheKeys, logger,
+				cfg, mapper, cache, cacheKeys, lgr,
 				knowledgeLibrary, knowledgeBases, cronScheduler, false,
 			)
 
@@ -112,13 +113,13 @@ func TestEngineImpl(t *testing.T) {
 			mapper := NewMockRuleMapper(ctrl)
 			cache := NewMockCache(ctrl)
 			cacheKeys := CacheKeyBuilder{}
-			logger := NewNoopLogger()
+			lgr := logger.NewNoopLogger()
 			knowledgeLibrary := ast.NewKnowledgeLibrary()
 			knowledgeBases := &sync.Map{}
 			cronScheduler := cron.New()
 			
 			engine := NewEngineImpl[map[string]any](
-				cfg, mapper, cache, cacheKeys, logger,
+				cfg, mapper, cache, cacheKeys, lgr,
 				knowledgeLibrary, knowledgeBases, cronScheduler, false,
 			)
 
@@ -172,13 +173,13 @@ func TestEngineImpl(t *testing.T) {
 				mapper := NewRuleMapper(db)
 				cache := NewMockCache(ctrl)
 				cacheKeys := CacheKeyBuilder{}
-				logger := NewNoopLogger()
+				lgr := logger.NewNoopLogger()
 				knowledgeLibrary := ast.NewKnowledgeLibrary()
 				knowledgeBases := &sync.Map{}
 				cronScheduler := cron.New()
 				
 				engine := NewEngineImpl[map[string]any](
-					cfg, mapper, cache, cacheKeys, logger,
+					cfg, mapper, cache, cacheKeys, lgr,
 					knowledgeLibrary, knowledgeBases, cronScheduler, false,
 				)
 

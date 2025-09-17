@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gitee.com/damengde/runehammer/config"
+	logger "gitee.com/damengde/runehammer/logger"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
@@ -22,7 +23,7 @@ type RuntimeContext struct {
 	// 实例对象
 	DB     *gorm.DB // 数据库连接实例
 	Cache  Cache    // 缓存实例
-	Logger Logger   // 日志实例
+	Logger logger.Logger   // 日志实例
 
 	// 组件对象
 	RuleMapper RuleMapper // 规则映射器
@@ -60,7 +61,7 @@ func NewRuntimeContext(cfg *config.Config, options ...ContextOption) (*RuntimeCo
 
 	// 初始化日志
 	if ctx.Logger == nil {
-		ctx.Logger = NewNoopLogger() // 默认使用无操作日志
+		ctx.Logger = logger.NewNoopLogger() // 默认使用无操作日志
 	}
 
 	// 初始化规则映射器
