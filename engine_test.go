@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	logger "gitee.com/damengde/runehammer/logger"
+	"gitee.com/damengde/runehammer/rule"
 	. "github.com/smartystreets/goconvey/convey"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -18,7 +19,7 @@ func TestEngine(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// 自动迁移
-		err = db.AutoMigrate(&Rule{})
+		err = db.AutoMigrate(&rule.Rule{})
 		So(err, ShouldBeNil)
 
 		Convey("创建引擎", func() {

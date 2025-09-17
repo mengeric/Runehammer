@@ -9,6 +9,7 @@ import (
 	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
+	"gitee.com/damengde/runehammer/rule"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
@@ -22,12 +23,12 @@ import (
 // RuntimeContext 运行时上下文 - 持有所有运行时实例对象
 type RuntimeContext struct {
 	// 实例对象
-	DB     *gorm.DB // 数据库连接实例
-	Cache  cache.Cache    // 缓存实例
-	Logger logger.Logger   // 日志实例
+	DB     *gorm.DB      // 数据库连接实例
+	Cache  cache.Cache   // 缓存实例
+	Logger logger.Logger // 日志实例
 
 	// 组件对象
-	RuleMapper RuleMapper // 规则映射器
+	RuleMapper rule.RuleMapper // 规则映射器
 
 	// 配置引用（只读）
 	config *config.Config
@@ -67,12 +68,12 @@ func NewRuntimeContext(cfg *config.Config, options ...ContextOption) (*RuntimeCo
 
 	// 初始化规则映射器
 	if ctx.RuleMapper == nil {
-		ctx.RuleMapper = NewRuleMapper(ctx.DB)
+		ctx.RuleMapper = rule.NewRuleMapper(ctx.DB)
 	}
 
 	// 执行自动迁移
 	if ctx.config.AutoMigrate {
-		if err := ctx.DB.AutoMigrate(&Rule{}); err != nil {
+		if err := ctx.DB.AutoMigrate(&rule.Rule{}); err != nil {
 			return nil, fmt.Errorf("数据库迁移失败: %w", err)
 		}
 	}
@@ -130,7 +131,7 @@ func (ctx *RuntimeContext) setupCache() error {
 
 		if err := client.Ping(pingCtx).Err(); err != nil {
 			// Redis连接失败，返回错误而不是降级
-			return fmt.Errorf("Redis连接失败: %w", err)
+			return err
 		}
 
 		ctx.Cache = cache.NewRedisCache(client)

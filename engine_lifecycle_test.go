@@ -10,6 +10,7 @@ import (
 	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
+	"gitee.com/damengde/runehammer/rule"
 	"github.com/robfig/cron/v3"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.uber.org/mock/gomock"
@@ -33,7 +34,7 @@ func TestEngineLifecycle(t *testing.T) {
 				// 创建引擎实例
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -67,7 +68,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -97,7 +98,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -123,7 +124,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -152,7 +153,7 @@ func TestEngineLifecycle(t *testing.T) {
 				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -175,7 +176,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewDefaultLogger(),
@@ -197,7 +198,7 @@ func TestEngineLifecycle(t *testing.T) {
 				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -234,7 +235,7 @@ func TestEngineLifecycle(t *testing.T) {
 				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -280,7 +281,7 @@ func TestEngineLifecycle(t *testing.T) {
 				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -315,7 +316,7 @@ func TestEngineLifecycle(t *testing.T) {
 				cacheImpl := cache.NewMemoryCache(1000)
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cacheImpl,
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -353,7 +354,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cacheImpl,
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -388,7 +389,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewDefaultLogger(),
@@ -411,7 +412,7 @@ func TestEngineLifecycle(t *testing.T) {
 				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -437,7 +438,7 @@ func TestEngineLifecycle(t *testing.T) {
 				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					nil, // 无缓存
 					cache.CacheKeyBuilder{},
 					nil, // 无日志
@@ -471,7 +472,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cacheImpl,
 					cache.CacheKeyBuilder{},
 					logger,
@@ -502,7 +503,7 @@ func TestEngineLifecycle(t *testing.T) {
 				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -525,7 +526,7 @@ func TestEngineLifecycle(t *testing.T) {
 				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -564,7 +565,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cacheImpl,
 					cache.CacheKeyBuilder{},
 					logger,
@@ -619,7 +620,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -708,7 +709,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cacheImpl,
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -758,7 +759,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -782,7 +783,7 @@ func TestEngineLifecycle(t *testing.T) {
 					config := &config.Config{DSN: "mock"}
 					engine := NewEngineImpl[map[string]interface{}](
 						config,
-						NewMockRuleMapper(ctrl),
+						rule.NewMockRuleMapper(ctrl),
 						cache.NewMemoryCache(1000),
 						cache.CacheKeyBuilder{},
 						logger.NewNoopLogger(),
@@ -803,7 +804,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -841,7 +842,7 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -867,7 +868,7 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -895,7 +896,7 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -940,7 +941,7 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -978,7 +979,7 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 				config := &config.Config{DSN: "mock"}
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					NewMockRuleMapper(ctrl),
+					rule.NewMockRuleMapper(ctrl),
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),

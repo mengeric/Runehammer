@@ -82,7 +82,7 @@ type BaseEngine interface {
 	//   map[string]interface{} - 规则执行的原始结果
 	//   error                  - 执行错误
 	ExecRaw(ctx context.Context, bizCode string, input any) (map[string]interface{}, error)
-	
+
 	// Close 关闭引擎 - 释放所有资源
 	Close() error
 }
@@ -90,12 +90,14 @@ type BaseEngine interface {
 // TypedEngine 泛型包装器 - 将BaseEngine包装为强类型接口
 //
 // 泛型参数:
-//   T - 目标结果类型
+//
+//	T - 目标结果类型
 //
 // 使用方式:
-//   baseEngine := NewBaseEngine()
-//   userEngine := &TypedEngine[UserResult]{base: baseEngine}
-//   result, err := userEngine.Exec(ctx, "bizCode", input)
+//
+//	baseEngine := NewBaseEngine()
+//	userEngine := &TypedEngine[UserResult]{base: baseEngine}
+//	result, err := userEngine.Exec(ctx, "bizCode", input)
 type TypedEngine[T any] struct {
 	base BaseEngine
 }
@@ -103,22 +105,24 @@ type TypedEngine[T any] struct {
 // Exec 执行规则并返回强类型结果
 //
 // 参数:
-//   ctx     - 上下文，用于超时控制和取消操作  
-//   bizCode - 业务码，用于标识规则集合
-//   input   - 输入数据，支持map、结构体或其他类型
+//
+//	ctx     - 上下文，用于超时控制和取消操作
+//	bizCode - 业务码，用于标识规则集合
+//	input   - 输入数据，支持map、结构体或其他类型
 //
 // 返回值:
-//   T     - 强类型的规则执行结果
-//   error - 执行错误
+//
+//	T     - 强类型的规则执行结果
+//	error - 执行错误
 func (te *TypedEngine[T]) Exec(ctx context.Context, bizCode string, input any) (T, error) {
 	var zero T
-	
+
 	// 1. 执行原始规则
 	rawResult, err := te.base.ExecRaw(ctx, bizCode, input)
 	if err != nil {
 		return zero, err
 	}
-	
+
 	// 2. 转换为目标类型
 	return convertToType[T](rawResult)
 }
@@ -131,13 +135,16 @@ func (te *TypedEngine[T]) Close() error {
 // NewTypedEngine 创建泛型包装器
 //
 // 泛型参数:
-//   T - 目标结果类型
+//
+//	T - 目标结果类型
 //
 // 参数:
-//   base - 基础引擎实例
+//
+//	base - 基础引擎实例
 //
 // 返回值:
-//   *TypedEngine[T] - 泛型包装器实例
+//
+//	*TypedEngine[T] - 泛型包装器实例
 func NewTypedEngine[T any](base BaseEngine) *TypedEngine[T] {
 	return &TypedEngine[T]{base: base}
 }
@@ -149,22 +156,25 @@ func NewTypedEngine[T any](base BaseEngine) *TypedEngine[T] {
 // convertToType 将map[string]interface{}转换为指定类型
 //
 // 泛型参数:
-//   T - 目标类型
+//
+//	T - 目标类型
 //
 // 参数:
-//   rawResult - 原始map结果
+//
+//	rawResult - 原始map结果
 //
 // 返回值:
-//   T     - 转换后的结果
-//   error - 转换错误
+//
+//	T     - 转换后的结果
+//	error - 转换错误
 func convertToType[T any](rawResult map[string]interface{}) (T, error) {
 	var zero T
-	
+
 	// 1. 如果目标类型就是map[string]interface{}，直接返回
 	if result, ok := any(rawResult).(T); ok {
 		return result, nil
 	}
-	
+
 	// 2. 如果目标类型是map[string]any，转换并返回
 	if _, ok := any(zero).(map[string]any); ok {
 		converted := make(map[string]any)
@@ -175,7 +185,7 @@ func convertToType[T any](rawResult map[string]interface{}) (T, error) {
 			return result, nil
 		}
 	}
-	
+
 	// 3. 尝试JSON序列化/反序列化进行结构体转换
 	return convertMapToStruct[T](rawResult)
 }
@@ -183,23 +193,26 @@ func convertToType[T any](rawResult map[string]interface{}) (T, error) {
 // convertMapToStruct 将map[string]interface{}转换为结构体
 //
 // 泛型参数:
-//   T - 目标结构体类型
+//
+//	T - 目标结构体类型
 //
 // 参数:
-//   rawResult - 原始map结果
+//
+//	rawResult - 原始map结果
 //
 // 返回值:
-//   T     - 转换后的结构体
-//   error - 转换错误
+//
+//	T     - 转换后的结构体
+//	error - 转换错误
 func convertMapToStruct[T any](rawResult map[string]interface{}) (T, error) {
 	var zero T
-	
+
 	// 1. 检查目标类型
 	targetType := reflect.TypeOf(zero)
 	if targetType == nil {
 		return zero, fmt.Errorf("无法确定目标类型")
 	}
-	
+
 	// 2. 如果是接口类型，直接返回map
 	if targetType.Kind() == reflect.Interface {
 		if result, ok := any(rawResult).(T); ok {
@@ -207,43 +220,46 @@ func convertMapToStruct[T any](rawResult map[string]interface{}) (T, error) {
 		}
 		return zero, fmt.Errorf("接口类型转换失败")
 	}
-	
+
 	// 3. 使用JSON序列化/反序列化进行转换
 	jsonData, err := json.Marshal(rawResult)
 	if err != nil {
 		return zero, fmt.Errorf("JSON序列化失败: %w", err)
 	}
-	
+
 	var result T
 	if err := json.Unmarshal(jsonData, &result); err != nil {
 		return zero, fmt.Errorf("JSON反序列化失败: %w", err)
 	}
-	
+
 	return result, nil
 }
 
 // NewBaseEngine 创建通用基础引擎实例
 //
 // 参数:
-//   opts - 配置选项，支持数据库、缓存、日志等配置
+//
+//	opts - 配置选项，支持数据库、缓存、日志等配置
 //
 // 返回值:
-//   BaseEngine - 基础引擎实例
-//   error      - 创建过程中的错误
+//
+//	BaseEngine - 基础引擎实例
+//	error      - 创建过程中的错误
 //
 // 使用示例:
-//   baseEngine, err := NewBaseEngine(
-//       WithDB(db),
-//       WithRedisCache("localhost:6379", 0),
-//       WithLogger(logger),
-//   )
+//
+//	baseEngine, err := NewBaseEngine(
+//	    WithDB(db),
+//	    WithRedisCache("localhost:6379", 0),
+//	    WithLogger(logger),
+//	)
 func NewBaseEngine(opts ...Option) (BaseEngine, error) {
 	// 使用map[string]interface{}作为内部类型创建引擎
 	engine, err := New[map[string]interface{}](opts...)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 包装为BaseEngine接口
 	return &baseEngineWrapper{engine: engine}, nil
 }
@@ -307,8 +323,8 @@ func New[T any](opts ...Option) (Engine[T], error) {
 
 	// 4. 创建引擎实例（暂时保持向后兼容）
 	eng := NewEngineImpl[T](
-		cfg,                     // 仍然传递Config保持兼容性
-		ctx.RuleMapper,          // 但使用RuntimeContext中的实例
+		cfg,            // 仍然传递Config保持兼容性
+		ctx.RuleMapper, // 但使用RuntimeContext中的实例
 		ctx.Cache,
 		cache.CacheKeyBuilder{},
 		ctx.Logger,

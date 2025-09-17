@@ -11,6 +11,7 @@ import (
 	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
+	"gitee.com/damengde/runehammer/rule"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/hyperjumptech/grule-rule-engine/builder"
 	"github.com/hyperjumptech/grule-rule-engine/engine"
@@ -25,11 +26,11 @@ import (
 // engineImpl 规则引擎的具体实现 - 包含所有运行时状态和依赖
 type engineImpl[T any] struct {
 	// 核心配置和依赖
-	config    *config.Config  // 引擎配置信息 - 使用config包的Config类型
-	mapper    RuleMapper     // 规则数据访问接口
+	config    *config.Config        // 引擎配置信息 - 使用config包的Config类型
+	mapper    rule.RuleMapper       // 规则数据访问接口
 	cache     cache.Cache           // 缓存接口（Redis或内存）
 	cacheKeys cache.CacheKeyBuilder // 缓存键构建器
-	logger    logger.Logger // 日志接口
+	logger    logger.Logger         // 日志接口
 
 	// Grule引擎相关
 	knowledgeLibrary *ast.KnowledgeLibrary // Grule知识库
@@ -43,8 +44,8 @@ type engineImpl[T any] struct {
 
 // NewEngineImpl 创建引擎实例
 func NewEngineImpl[T any](
-	cfg *config.Config,  // 使用config包的Config类型
-	mapper RuleMapper,
+	cfg *config.Config, // 使用config包的Config类型
+	mapper rule.RuleMapper,
 	cache cache.Cache,
 	cacheKeys cache.CacheKeyBuilder,
 	logger logger.Logger,
@@ -56,9 +57,9 @@ func NewEngineImpl[T any](
 	if knowledgeBases == nil {
 		knowledgeBases = &sync.Map{}
 	}
-	
+
 	return &engineImpl[T]{
-		config:           cfg,  // 直接赋值config包的Config
+		config:           cfg, // 直接赋值config包的Config
 		mapper:           mapper,
 		cache:            cache,
 		cacheKeys:        cacheKeys,
@@ -140,7 +141,7 @@ func (e *engineImpl[T]) Exec(ctx context.Context, bizCode string, input any) (T,
 		}
 		return zero, fmt.Errorf("知识库为空")
 	}
-	
+
 	if err := ruleEngine.Execute(dataCtx, knowledgeBase); err != nil {
 		if e.logger != nil {
 			e.logger.Errorf(ctx, "规则执行失败", "bizCode", bizCode, "error", err)
@@ -165,7 +166,7 @@ func (e *engineImpl[T]) Exec(ctx context.Context, bizCode string, input any) (T,
 // ============================================================================
 
 // getRules 获取规则 - 支持缓存机制和数据库回退
-func (e *engineImpl[T]) getRules(ctx context.Context, bizCode string) ([]*Rule, error) {
+func (e *engineImpl[T]) getRules(ctx context.Context, bizCode string) ([]*rule.Rule, error) {
 	// 1. 尝试从缓存获取
 	if e.cache != nil {
 		cacheKey := e.cacheKeys.RuleKey(bizCode)
@@ -178,9 +179,9 @@ func (e *engineImpl[T]) getRules(ctx context.Context, bizCode string) ([]*Rule, 
 					e.logger.Debugf(ctx, "从缓存获取规则成功", "bizCode", bizCode, "count", len(cacheItem.Rules))
 				}
 				// Convert cache.Rule (interface{}) back to []*Rule
-				rules := make([]*Rule, len(cacheItem.Rules))
+				rules := make([]*rule.Rule, len(cacheItem.Rules))
 				for i, r := range cacheItem.Rules {
-					if rule, ok := r.(*Rule); ok {
+					if rule, ok := r.(*rule.Rule); ok {
 						rules[i] = rule
 					}
 				}
@@ -202,7 +203,7 @@ func (e *engineImpl[T]) getRules(ctx context.Context, bizCode string) ([]*Rule, 
 		for i, rule := range rules {
 			cacheRules[i] = rule
 		}
-		
+
 		cacheItem := cache.RuleCacheItem{
 			Rules:     cacheRules,
 			UpdatedAt: time.Now(),
@@ -221,7 +222,7 @@ func (e *engineImpl[T]) getRules(ctx context.Context, bizCode string) ([]*Rule, 
 }
 
 // compileRules 编译规则 - 将GRL规则转换为可执行的知识库
-func (e *engineImpl[T]) compileRules(bizCode string, rules []*Rule) (*ast.KnowledgeBase, error) {
+func (e *engineImpl[T]) compileRules(bizCode string, rules []*rule.Rule) (*ast.KnowledgeBase, error) {
 	// 检查是否已编译缓存
 	if kb, ok := e.knowledgeBases.Load(bizCode); ok {
 		return kb.(*ast.KnowledgeBase), nil
@@ -230,7 +231,7 @@ func (e *engineImpl[T]) compileRules(bizCode string, rules []*Rule) (*ast.Knowle
 	// 使用互斥锁保护编译过程，防止并发编译同一个业务码的规则
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	
+
 	// 双重检查，防止在等待锁的过程中其他协程已经编译完成
 	if kb, ok := e.knowledgeBases.Load(bizCode); ok {
 		return kb.(*ast.KnowledgeBase), nil
@@ -310,13 +311,13 @@ func (e *engineImpl[T]) Close() error {
 func (e *engineImpl[T]) createEmptyResult() T {
 	var result T
 	resultType := reflect.TypeOf(result)
-	
+
 	// 如果是map类型，返回空map而不是nil
 	if resultType != nil && resultType.Kind() == reflect.Map {
 		emptyMap := reflect.MakeMap(resultType)
 		return emptyMap.Interface().(T)
 	}
-	
+
 	// 其他类型返回零值
 	return result
 }

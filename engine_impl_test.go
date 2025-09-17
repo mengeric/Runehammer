@@ -8,10 +8,11 @@ import (
 	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
-	"go.uber.org/mock/gomock"
-	. "github.com/smartystreets/goconvey/convey"
+	"gitee.com/damengde/runehammer/rule"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/robfig/cron/v3"
+	. "github.com/smartystreets/goconvey/convey"
+	"go.uber.org/mock/gomock"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -21,35 +22,35 @@ func TestEngineImpl(t *testing.T) {
 	Convey("引擎实现测试", t, func() {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		
+
 		Convey("引擎创建", func() {
 			cfg := config.DefaultConfig()
-			mapper := NewMockRuleMapper(ctrl)
+			mapper := rule.NewMockRuleMapper(ctrl)
 			cacheImpl := cache.NewMockCache(ctrl)
 			cacheKeys := cache.CacheKeyBuilder{}
 			lgr := logger.NewNoopLogger()
 			knowledgeLibrary := ast.NewKnowledgeLibrary()
 			knowledgeBases := &sync.Map{}
 			cronScheduler := cron.New()
-			
+
 			engine := NewEngineImpl[map[string]any](
 				cfg, mapper, cacheImpl, cacheKeys, lgr,
 				knowledgeLibrary, knowledgeBases, cronScheduler, false,
 			)
-			
+
 			So(engine, ShouldNotBeNil)
 		})
 
 		Convey("执行规则", func() {
 			cfg := config.DefaultConfig()
-			mapper := NewMockRuleMapper(ctrl)
+			mapper := rule.NewMockRuleMapper(ctrl)
 			cacheImpl := cache.NewMockCache(ctrl)
 			cacheKeys := cache.CacheKeyBuilder{}
 			lgr := logger.NewNoopLogger()
 			knowledgeLibrary := ast.NewKnowledgeLibrary()
 			knowledgeBases := &sync.Map{}
 			cronScheduler := cron.New()
-			
+
 			engine := NewEngineImpl[map[string]any](
 				cfg, mapper, cacheImpl, cacheKeys, lgr,
 				knowledgeLibrary, knowledgeBases, cronScheduler, false,
@@ -57,7 +58,7 @@ func TestEngineImpl(t *testing.T) {
 
 			Convey("正常执行", func() {
 				// 设置测试规则
-				rules := []*Rule{
+				rules := []*rule.Rule{
 					{
 						ID:      1,
 						BizCode: "test_biz",
@@ -66,14 +67,14 @@ func TestEngineImpl(t *testing.T) {
 						Enabled: true,
 					},
 				}
-				
+
 				// 设置mock期望
 				mapper.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return(rules, nil)
 
 				// 执行规则
 				input := map[string]any{"age": 25}
 				result, err := engine.Exec(context.Background(), "test_biz", input)
-				
+
 				So(err, ShouldBeNil)
 				So(result, ShouldNotBeNil)
 				So(result["adult"], ShouldEqual, true)
@@ -82,7 +83,7 @@ func TestEngineImpl(t *testing.T) {
 			Convey("空业务码", func() {
 				input := map[string]any{"age": 25}
 				result, err := engine.Exec(context.Background(), "", input)
-				
+
 				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldContainSubstring, "无效的业务码")
 				So(result, ShouldBeZeroValue)
@@ -90,7 +91,7 @@ func TestEngineImpl(t *testing.T) {
 
 			Convey("空输入", func() {
 				result, err := engine.Exec(context.Background(), "test_biz", nil)
-				
+
 				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldContainSubstring, "输入参数为空")
 				So(result, ShouldBeZeroValue)
@@ -98,11 +99,11 @@ func TestEngineImpl(t *testing.T) {
 
 			Convey("规则不存在", func() {
 				// 设置mock期望：返回空规则列表
-				mapper.EXPECT().FindByBizCode(gomock.Any(), "nonexistent").Return([]*Rule{}, nil)
-				
+				mapper.EXPECT().FindByBizCode(gomock.Any(), "nonexistent").Return([]*rule.Rule{}, nil)
+
 				input := map[string]any{"age": 25}
 				result, err := engine.Exec(context.Background(), "nonexistent", input)
-				
+
 				So(err, ShouldNotBeNil)
 				So(err.Error(), ShouldContainSubstring, "规则未找到")
 				So(result, ShouldBeZeroValue)
@@ -111,14 +112,14 @@ func TestEngineImpl(t *testing.T) {
 
 		Convey("引擎关闭", func() {
 			cfg := config.DefaultConfig()
-			mapper := NewMockRuleMapper(ctrl)
+			mapper := rule.NewMockRuleMapper(ctrl)
 			cacheImpl := cache.NewMockCache(ctrl)
 			cacheKeys := cache.CacheKeyBuilder{}
 			lgr := logger.NewNoopLogger()
 			knowledgeLibrary := ast.NewKnowledgeLibrary()
 			knowledgeBases := &sync.Map{}
 			cronScheduler := cron.New()
-			
+
 			engine := NewEngineImpl[map[string]any](
 				cfg, mapper, cacheImpl, cacheKeys, lgr,
 				knowledgeLibrary, knowledgeBases, cronScheduler, false,
@@ -127,7 +128,7 @@ func TestEngineImpl(t *testing.T) {
 			Convey("正常关闭", func() {
 				// 设置cache close期望
 				cacheImpl.EXPECT().Close().Return(nil)
-				
+
 				err := engine.Close()
 				So(err, ShouldBeNil)
 
@@ -141,7 +142,7 @@ func TestEngineImpl(t *testing.T) {
 			Convey("重复关闭", func() {
 				// 设置cache close期望 - 可能被调用多次
 				cacheImpl.EXPECT().Close().Return(nil).AnyTimes()
-				
+
 				err1 := engine.Close()
 				So(err1, ShouldBeNil)
 
@@ -156,29 +157,29 @@ func TestEngineImpl(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			// 自动迁移
-			err = db.AutoMigrate(&Rule{})
+			err = db.AutoMigrate(&rule.Rule{})
 			So(err, ShouldBeNil)
 
 			// 插入测试规则
-			rule := &Rule{
+			testRule := &rule.Rule{
 				BizCode: "db_test",
 				Name:    "数据库测试规则",
 				GRL:     `rule DBTestRule "数据库测试" { when Params.amount > 100 then result["discount"] = 0.1; }`,
 				Enabled: true,
 			}
-			err = db.Create(rule).Error
+			err = db.Create(testRule).Error
 			So(err, ShouldBeNil)
 
 			Convey("使用真实数据库映射器", func() {
 				cfg := config.DefaultConfig()
-				mapper := NewRuleMapper(db)
+				mapper := rule.NewRuleMapper(db)
 				cacheImpl := cache.NewMockCache(ctrl)
 				cacheKeys := cache.CacheKeyBuilder{}
 				lgr := logger.NewNoopLogger()
 				knowledgeLibrary := ast.NewKnowledgeLibrary()
 				knowledgeBases := &sync.Map{}
 				cronScheduler := cron.New()
-				
+
 				engine := NewEngineImpl[map[string]any](
 					cfg, mapper, cacheImpl, cacheKeys, lgr,
 					knowledgeLibrary, knowledgeBases, cronScheduler, false,
@@ -186,7 +187,7 @@ func TestEngineImpl(t *testing.T) {
 
 				input := map[string]any{"amount": 150}
 				result, err := engine.Exec(context.Background(), "db_test", input)
-				
+
 				So(err, ShouldBeNil)
 				So(result, ShouldNotBeNil)
 				So(result["discount"], ShouldEqual, 0.1)

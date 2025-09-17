@@ -10,6 +10,7 @@ import (
 	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
+	"gitee.com/damengde/runehammer/rule"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.uber.org/mock/gomock"
 )
@@ -54,8 +55,8 @@ func TestRunehammer(t *testing.T) {
 				var engine Engine[map[string]interface{}]
 
 				// 创建MockRuleMapper并设置期望
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
 				// 模拟引擎实现
 				engine = NewEngineImpl[map[string]interface{}](
@@ -83,9 +84,9 @@ func TestRunehammer(t *testing.T) {
 				// 测试不同的泛型类型
 
 				// string类型
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				stringEngine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -195,8 +196,8 @@ func TestRunehammer(t *testing.T) {
 				ctrl := gomock.NewController(t)
 				defer ctrl.Finish()
 
-				mapper := NewMockRuleMapper(ctrl)
-				mapper.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*Rule{}, nil).AnyTimes()
+				mapper := rule.NewMockRuleMapper(ctrl)
+				mapper.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*rule.Rule{}, nil).AnyTimes()
 
 				engine := NewEngineImpl[map[string]interface{}](
 					&config.Config{DSN: "mock"},
@@ -223,8 +224,8 @@ func TestRunehammer(t *testing.T) {
 				ctrl := gomock.NewController(t)
 				defer ctrl.Finish()
 
-				mapper := NewMockRuleMapper(ctrl)
-				mapper.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*Rule{}, nil).AnyTimes()
+				mapper := rule.NewMockRuleMapper(ctrl)
+				mapper.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*rule.Rule{}, nil).AnyTimes()
 
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
@@ -269,8 +270,8 @@ func TestRunehammer(t *testing.T) {
 				ctrl := gomock.NewController(t)
 				defer ctrl.Finish()
 
-				mapper := NewMockRuleMapper(ctrl)
-				mapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
+				mapper := rule.NewMockRuleMapper(ctrl)
+				mapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
 				// string返回类型
 				stringEngine := NewEngineImpl[string](
@@ -340,9 +341,9 @@ func TestRunehammer(t *testing.T) {
 		Convey("资源管理", func() {
 
 			Convey("Close方法", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -361,9 +362,9 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("重复关闭", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -386,9 +387,9 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("关闭后调用方法", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -420,9 +421,9 @@ func TestRunehammer(t *testing.T) {
 		Convey("上下文处理", func() {
 
 			Convey("正常上下文", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), "test").Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), "test").Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -444,9 +445,9 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("带值的上下文", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -468,9 +469,9 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("取消的上下文", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -496,9 +497,9 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("nil上下文", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -522,9 +523,9 @@ func TestRunehammer(t *testing.T) {
 		Convey("业务码处理", func() {
 
 			Convey("正常业务码", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -555,9 +556,9 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("空业务码", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -582,9 +583,9 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("特殊字符业务码", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -620,9 +621,9 @@ func TestRunehammer(t *testing.T) {
 		Convey("并发安全性", func() {
 
 			Convey("并发执行", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -672,9 +673,9 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("并发关闭", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -886,12 +887,12 @@ func TestRunehammerIntegration(t *testing.T) {
 
 			Convey("不同实现的兼容性", func() {
 				// 创建MockRuleMapper并设置期望
-				mockMapper1 := NewMockRuleMapper(ctrl)
-				mockMapper1.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*Rule{}, nil).AnyTimes()
-				
-				mockMapper2 := NewMockRuleMapper(ctrl)
-				mockMapper2.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper1 := rule.NewMockRuleMapper(ctrl)
+				mockMapper1.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*rule.Rule{}, nil).AnyTimes()
+
+				mockMapper2 := rule.NewMockRuleMapper(ctrl)
+				mockMapper2.EXPECT().FindByBizCode(gomock.Any(), "test_biz").Return([]*rule.Rule{}, nil).AnyTimes()
+
 				// 创建不同配置的引擎实例
 				engines := []Engine[string]{
 					NewEngineImpl[string](
@@ -939,9 +940,9 @@ func TestRunehammerIntegration(t *testing.T) {
 		Convey("实际使用场景模拟", func() {
 
 			Convey("典型业务使用模式", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[map[string]interface{}](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -1011,9 +1012,9 @@ func TestRunehammerIntegration(t *testing.T) {
 		Convey("错误恢复能力", func() {
 
 			Convey("处理无效输入", func() {
-				mockMapper := NewMockRuleMapper(ctrl)
-				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*Rule{}, nil).AnyTimes()
-				
+				mockMapper := rule.NewMockRuleMapper(ctrl)
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
@@ -1088,7 +1089,7 @@ func TestRunehammerIntegration(t *testing.T) {
 				}
 
 				// 1. 简单规则测试 - 使用正确的字段访问
-				simpleRule := SimpleRule{
+				simpleRule := rule.SimpleRule{
 					When: "Params.Customer.Age >= 18 && Params.Order.Amount > 1000",
 					Then: map[string]string{
 						"Result.Eligible": "true",
@@ -1102,7 +1103,7 @@ func TestRunehammerIntegration(t *testing.T) {
 				So(result1["Type"], ShouldEqual, "simple")
 
 				// 2. 指标规则测试 - 使用正确的字段访问
-				metricRule := MetricRule{
+				metricRule := rule.MetricRule{
 					Name:        "customer_score",
 					Description: "客户综合评分",
 					Formula:     "age_score + income_score + vip_score",
@@ -1127,38 +1128,38 @@ func TestRunehammerIntegration(t *testing.T) {
 				So(score, ShouldEqual, 41)
 
 				// 3. 标准规则测试 - 使用枚举类型
-				standardRule := StandardRule{
+				standardRule := rule.StandardRule{
 					ID:          "integration_test",
 					Name:        "集成测试标准规则",
 					Description: "用于集成测试的标准规则",
 					Priority:    100,
 					Enabled:     true,
-					Conditions: Condition{
-						Type:     ConditionTypeComposite,
-						Operator: OpAnd,
-						Children: []Condition{
+					Conditions: rule.Condition{
+						Type:     rule.ConditionTypeComposite,
+						Operator: rule.OpAnd,
+						Children: []rule.Condition{
 							{
-								Type:     ConditionTypeSimple,
+								Type:     rule.ConditionTypeSimple,
 								Left:     "Params.Customer.VipLevel",
-								Operator: OpGreaterThanOrEqual,
+								Operator: rule.OpGreaterThanOrEqual,
 								Right:    3,
 							},
 							{
-								Type:     ConditionTypeSimple,
+								Type:     rule.ConditionTypeSimple,
 								Left:     "Params.Order.Amount",
-								Operator: OpGreaterThan,
+								Operator: rule.OpGreaterThan,
 								Right:    1000,
 							},
 						},
 					},
-					Actions: []Action{
+					Actions: []rule.Action{
 						{
-							Type:   ActionTypeAssign,
+							Type:   rule.ActionTypeAssign,
 							Target: "Result.VipDiscount",
 							Value:  true,
 						},
 						{
-							Type:       ActionTypeCalculate,
+							Type:       rule.ActionTypeCalculate,
 							Target:     "Result.DiscountAmount",
 							Expression: "Params.Order.Amount * 0.15",
 						},
@@ -1185,7 +1186,7 @@ func TestRunehammerIntegration(t *testing.T) {
 				ctx := context.Background()
 
 				// 测试整数输入
-				intRule := SimpleRule{
+				intRule := rule.SimpleRule{
 					When: "Params > 100",
 					Then: map[string]string{
 						"Result.LargeNumber": "true",
@@ -1199,7 +1200,7 @@ func TestRunehammerIntegration(t *testing.T) {
 				So(result["Value"], ShouldEqual, 300)
 
 				// 测试字符串输入
-				stringRule := SimpleRule{
+				stringRule := rule.SimpleRule{
 					When: "Params == \"VIP\"",
 					Then: map[string]string{
 						"Result.IsVip":   "true",
@@ -1226,19 +1227,19 @@ func TestRunehammerIntegration(t *testing.T) {
 
 				// 创建多个不同的规则
 				rules := []interface{}{
-					SimpleRule{
+					rule.SimpleRule{
 						When: "Params > 100",
 						Then: map[string]string{
 							"Result.LargeNumber": "true",
 						},
 					},
-					SimpleRule{
+					rule.SimpleRule{
 						When: "Params > 1000",
 						Then: map[string]string{
 							"Result.VeryLargeNumber": "true",
 						},
 					},
-					SimpleRule{
+					rule.SimpleRule{
 						When: "Params % 2 == 0",
 						Then: map[string]string{
 							"Result.EvenNumber": "true",

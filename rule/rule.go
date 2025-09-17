@@ -1,6 +1,6 @@
-package runehammer
+package rule
 
-//go:generate mockgen -source=rule.go -destination=rule_mock.go -package=runehammer
+//go:generate mockgen -source=rule.go -destination=rule_mock.go -package=rule
 
 import (
 	"context"

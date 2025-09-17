@@ -13,6 +13,7 @@ import (
 	"time"
 
 	logger "gitee.com/damengde/runehammer/logger"
+	"gitee.com/damengde/runehammer/rule"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/hyperjumptech/grule-rule-engine/builder"
 	"github.com/hyperjumptech/grule-rule-engine/engine"
@@ -25,11 +26,11 @@ import (
 
 // DynamicEngine 动态规则引擎
 type DynamicEngine[T any] struct {
-	converter        RuleConverter          // 规则转换器
+	converter        rule.RuleConverter     // 规则转换器
 	knowledgeLibrary *ast.KnowledgeLibrary  // Grule知识库
 	customFunctions  map[string]interface{} // 自定义函数库
 	validators       []RuleValidator        // 规则验证器
-	logger           logger.Logger         // 日志记录器
+	logger           logger.Logger          // 日志记录器
 	cache            *DynamicRuleCache      // 规则缓存（可选）
 	config           DynamicEngineConfig    // 引擎配置
 }
@@ -46,7 +47,7 @@ type DynamicEngineConfig struct {
 
 // RuleValidator 规则验证器接口
 type RuleValidator interface {
-	Validate(definition interface{}) []ValidationError
+	Validate(definition interface{}) []rule.ValidationError
 }
 
 // DynamicRuleCache 动态规则缓存
@@ -83,7 +84,7 @@ func NewDynamicEngine[T any](config ...DynamicEngineConfig) *DynamicEngine[T] {
 	}
 
 	engine := &DynamicEngine[T]{
-		converter:        NewGRLConverter(),
+		converter:        rule.NewGRLConverter(),
 		knowledgeLibrary: ast.NewKnowledgeLibrary(),
 		customFunctions:  make(map[string]interface{}),
 		validators:       []RuleValidator{},

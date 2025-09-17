@@ -1,4 +1,4 @@
-package runehammer
+package rule
 
 import (
 	"strings"
@@ -207,7 +207,7 @@ func TestExpressionParser(t *testing.T) {
 				for op, expected := range customOps {
 					// 构造一个可能使用自定义操作符的条件
 					condition := "field " + op + " value"
-					
+
 					// 尝试解析，不一定成功（取决于实现）
 					result, err := parser.ParseCondition(condition)
 					if err == nil {
@@ -232,7 +232,7 @@ func TestExpressionParser(t *testing.T) {
 
 			Convey("语法错误", func() {
 				invalidInputs := []string{
-					"age >= ", // 不完整的表达式
+					"age >= ",      // 不完整的表达式
 					"AND age > 18", // 以操作符开始
 				}
 

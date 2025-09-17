@@ -1,4 +1,4 @@
-package runehammer
+package rule
 
 import (
 	"testing"

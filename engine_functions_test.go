@@ -9,10 +9,11 @@ import (
 	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
-	"go.uber.org/mock/gomock"
+	"gitee.com/damengde/runehammer/rule"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
 	"github.com/robfig/cron/v3"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.uber.org/mock/gomock"
 )
 
 // TestEngineFunctions 测试引擎内置函数
@@ -23,7 +24,7 @@ func TestEngineFunctions(t *testing.T) {
 
 		// 创建测试用的引擎实例
 		cfg := config.DefaultConfig()
-		mapper := NewMockRuleMapper(ctrl)
+		mapper := rule.NewMockRuleMapper(ctrl)
 		cacheImpl := cache.NewMockCache(ctrl)
 		cacheKeys := cache.CacheKeyBuilder{}
 		lgr := logger.NewNoopLogger()
@@ -507,10 +508,10 @@ func TestEngineFunctionsMissing(t *testing.T) {
 	Convey("缺失函数测试", t, func() {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		
+
 		// 创建测试用的引擎实例
 		cfg := config.DefaultConfig()
-		mapper := NewMockRuleMapper(ctrl)
+		mapper := rule.NewMockRuleMapper(ctrl)
 		cacheImpl := cache.NewMockCache(ctrl)
 		cacheKeys := cache.CacheKeyBuilder{}
 		lgr := logger.NewNoopLogger()
@@ -527,29 +528,29 @@ func TestEngineFunctionsMissing(t *testing.T) {
 
 		// 注入内置函数
 		engine.injectBuiltinFunctions(dataCtx)
-		
+
 		Convey("更多时间函数测试", func() {
-			
+
 			Convey("FormatTime() 时间格式化", func() {
 				formatTimeFunc := dataCtx.Get("FormatTime")
 				So(formatTimeFunc, ShouldNotBeNil)
-				
+
 				value, err := formatTimeFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				formatTime := value.Interface().(func(time.Time, string) string)
 				testTime := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
 				result := formatTime(testTime, "2006-01-02 15:04:05")
 				So(result, ShouldEqual, "2024-01-15 10:30:00")
 			})
-			
+
 			Convey("ParseTime() 时间解析", func() {
 				parseTimeFunc := dataCtx.Get("ParseTime")
 				So(parseTimeFunc, ShouldNotBeNil)
-				
+
 				value, err := parseTimeFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				parseTime := value.Interface().(func(string, string) (time.Time, error))
 				result, err := parseTime("2006-01-02", "2024-01-15")
 				So(err, ShouldBeNil)
@@ -557,258 +558,258 @@ func TestEngineFunctionsMissing(t *testing.T) {
 				So(result.Month(), ShouldEqual, time.January)
 				So(result.Day(), ShouldEqual, 15)
 			})
-			
+
 			Convey("AddHours() 小时加减", func() {
 				addHoursFunc := dataCtx.Get("AddHours")
 				So(addHoursFunc, ShouldNotBeNil)
-				
+
 				value, err := addHoursFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				addHours := value.Interface().(func(time.Time, int) time.Time)
 				testTime := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
 				result := addHours(testTime, 5)
 				So(result.Hour(), ShouldEqual, 15)
 			})
-			
+
 			Convey("TimeToMillis() 时间转毫秒", func() {
 				timeToMillisFunc := dataCtx.Get("TimeToMillis")
 				So(timeToMillisFunc, ShouldNotBeNil)
-				
+
 				value, err := timeToMillisFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				timeToMillis := value.Interface().(func(time.Time) int64)
 				testTime := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
 				result := timeToMillis(testTime)
 				So(result, ShouldBeGreaterThan, 0)
 			})
-			
+
 			Convey("MillisToTime() 毫秒转时间", func() {
 				millisToTimeFunc := dataCtx.Get("MillisToTime")
 				So(millisToTimeFunc, ShouldNotBeNil)
-				
+
 				value, err := millisToTimeFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				millisToTime := value.Interface().(func(int64) time.Time)
 				result := millisToTime(1705310400000) // 2024-01-15 10:00:00 UTC
 				So(result.Year(), ShouldEqual, 2024)
 			})
 		})
-		
+
 		Convey("更多字符串函数测试", func() {
-			
+
 			Convey("Split() 字符串分割", func() {
 				splitFunc := dataCtx.Get("Split")
 				So(splitFunc, ShouldNotBeNil)
-				
+
 				value, err := splitFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				split := value.Interface().(func(string, string) []string)
 				result := split("a,b,c,d", ",")
 				So(len(result), ShouldEqual, 4)
 				So(result[0], ShouldEqual, "a")
 				So(result[3], ShouldEqual, "d")
 			})
-			
+
 			Convey("Join() 字符串连接", func() {
 				joinFunc := dataCtx.Get("Join")
 				So(joinFunc, ShouldNotBeNil)
-				
+
 				value, err := joinFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				join := value.Interface().(func([]string, string) string)
 				result := join([]string{"hello", "world", "test"}, "-")
 				So(result, ShouldEqual, "hello-world-test")
 			})
-			
+
 			Convey("Replace() 字符串替换", func() {
 				replaceFunc := dataCtx.Get("Replace")
 				So(replaceFunc, ShouldNotBeNil)
-				
+
 				value, err := replaceFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				replace := value.Interface().(func(string, string, string, int) string)
 				// 替换一次
 				result1 := replace("hello hello hello", "hello", "hi", 1)
 				So(result1, ShouldEqual, "hi hello hello")
-				
+
 				// 替换所有
 				result2 := replace("hello hello hello", "hello", "hi", -1)
 				So(result2, ShouldEqual, "hi hi hi")
 			})
-			
+
 			Convey("TrimSpace() 去除空格", func() {
 				trimSpaceFunc := dataCtx.Get("TrimSpace")
 				So(trimSpaceFunc, ShouldNotBeNil)
-				
+
 				value, err := trimSpaceFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				trimSpace := value.Interface().(func(string) string)
 				result := trimSpace("  hello world  ")
 				So(result, ShouldEqual, "hello world")
 			})
 		})
-		
+
 		Convey("更多数学函数测试", func() {
-			
+
 			Convey("Floor() 向下取整", func() {
 				floorFunc := dataCtx.Get("Floor")
 				So(floorFunc, ShouldNotBeNil)
-				
+
 				value, err := floorFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				floor := value.Interface().(func(float64) float64)
 				So(floor(5.9), ShouldEqual, 5.0)
 				So(floor(-2.1), ShouldEqual, -3.0)
 			})
-			
+
 			Convey("Ceil() 向上取整", func() {
 				ceilFunc := dataCtx.Get("Ceil")
 				So(ceilFunc, ShouldNotBeNil)
-				
+
 				value, err := ceilFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				ceil := value.Interface().(func(float64) float64)
 				So(ceil(5.1), ShouldEqual, 6.0)
 				So(ceil(-2.9), ShouldEqual, -2.0)
 			})
-			
+
 			Convey("Pow() 幂运算", func() {
 				powFunc := dataCtx.Get("Pow")
 				So(powFunc, ShouldNotBeNil)
-				
+
 				value, err := powFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				pow := value.Interface().(func(float64, float64) float64)
 				So(pow(2.0, 3.0), ShouldEqual, 8.0)
 				So(pow(5.0, 2.0), ShouldEqual, 25.0)
 			})
-			
+
 			Convey("Sqrt() 平方根", func() {
 				sqrtFunc := dataCtx.Get("Sqrt")
 				So(sqrtFunc, ShouldNotBeNil)
-				
+
 				value, err := sqrtFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				sqrt := value.Interface().(func(float64) float64)
 				So(sqrt(16.0), ShouldEqual, 4.0)
 				So(sqrt(25.0), ShouldEqual, 5.0)
 			})
-			
+
 			Convey("Sin() 正弦", func() {
 				sinFunc := dataCtx.Get("Sin")
 				So(sinFunc, ShouldNotBeNil)
-				
+
 				value, err := sinFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				sin := value.Interface().(func(float64) float64)
 				So(sin(0.0), ShouldEqual, 0.0)
 				So(sin(math.Pi/2), ShouldAlmostEqual, 1.0, 0.0001)
 			})
-			
+
 			Convey("Cos() 余弦", func() {
 				cosFunc := dataCtx.Get("Cos")
 				So(cosFunc, ShouldNotBeNil)
-				
+
 				value, err := cosFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				cos := value.Interface().(func(float64) float64)
 				So(cos(0.0), ShouldEqual, 1.0)
 				So(cos(math.Pi), ShouldAlmostEqual, -1.0, 0.0001)
 			})
-			
+
 			Convey("Tan() 正切", func() {
 				tanFunc := dataCtx.Get("Tan")
 				So(tanFunc, ShouldNotBeNil)
-				
+
 				value, err := tanFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				tan := value.Interface().(func(float64) float64)
 				So(tan(0.0), ShouldEqual, 0.0)
 				So(tan(math.Pi/4), ShouldAlmostEqual, 1.0, 0.0001)
 			})
-			
+
 			Convey("Log() 自然对数", func() {
 				logFunc := dataCtx.Get("Log")
 				So(logFunc, ShouldNotBeNil)
-				
+
 				value, err := logFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				log := value.Interface().(func(float64) float64)
 				So(log(math.E), ShouldAlmostEqual, 1.0, 0.0001)
 				So(log(1.0), ShouldEqual, 0.0)
 			})
-			
+
 			Convey("Log10() 常用对数", func() {
 				log10Func := dataCtx.Get("Log10")
 				So(log10Func, ShouldNotBeNil)
-				
+
 				value, err := log10Func.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				log10 := value.Interface().(func(float64) float64)
 				So(log10(100.0), ShouldEqual, 2.0)
 				So(log10(1000.0), ShouldEqual, 3.0)
 			})
-			
+
 			Convey("MaxSlice() 数组最大值", func() {
 				maxSliceFunc := dataCtx.Get("MaxSlice")
 				So(maxSliceFunc, ShouldNotBeNil)
-				
+
 				value, err := maxSliceFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				maxSlice := value.Interface().(func([]float64) float64)
 				result := maxSlice([]float64{1.5, 3.2, 2.8, 5.1, 0.9})
 				So(result, ShouldEqual, 5.1)
-				
+
 				// 测试空数组
 				emptyResult := maxSlice([]float64{})
 				So(emptyResult, ShouldEqual, 0)
 			})
-			
+
 			Convey("MinSlice() 数组最小值", func() {
 				minSliceFunc := dataCtx.Get("MinSlice")
 				So(minSliceFunc, ShouldNotBeNil)
-				
+
 				value, err := minSliceFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				minSlice := value.Interface().(func([]float64) float64)
 				result := minSlice([]float64{1.5, 3.2, 2.8, 5.1, 0.9})
 				So(result, ShouldEqual, 0.9)
-				
+
 				// 测试空数组
 				emptyResult := minSlice([]float64{})
 				So(emptyResult, ShouldEqual, 0)
 			})
 		})
-		
+
 		Convey("更多工具函数测试", func() {
-			
+
 			Convey("ToString() 类型转换", func() {
 				toStringFunc := dataCtx.Get("ToString")
 				So(toStringFunc, ShouldNotBeNil)
-				
+
 				value, err := toStringFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				toString := value.Interface().(func(interface{}) string)
-				
+
 				// 测试各种类型
 				So(toString(42), ShouldEqual, "42")
 				So(toString(3.14), ShouldEqual, "3.14")
@@ -819,88 +820,88 @@ func TestEngineFunctionsMissing(t *testing.T) {
 				// 测试不支持的类型（default分支）
 				So(toString([]int{1, 2, 3}), ShouldEqual, "")
 			})
-			
+
 			Convey("ToInt() 字符串转整数", func() {
 				toIntFunc := dataCtx.Get("ToInt")
 				So(toIntFunc, ShouldNotBeNil)
-				
+
 				value, err := toIntFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				toInt := value.Interface().(func(string) (int, error))
 				result, err := toInt("42")
 				So(err, ShouldBeNil)
 				So(result, ShouldEqual, 42)
-				
+
 				// 测试错误情况
 				_, err = toInt("invalid")
 				So(err, ShouldNotBeNil)
 			})
-			
+
 			Convey("ToFloat() 字符串转浮点数", func() {
 				toFloatFunc := dataCtx.Get("ToFloat")
 				So(toFloatFunc, ShouldNotBeNil)
-				
+
 				value, err := toFloatFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				toFloat := value.Interface().(func(string) (float64, error))
 				result, err := toFloat("3.14")
 				So(err, ShouldBeNil)
 				So(result, ShouldEqual, 3.14)
-				
+
 				// 测试错误情况
 				_, err = toFloat("invalid")
 				So(err, ShouldNotBeNil)
 			})
-			
+
 			Convey("ToBool() 字符串转布尔值", func() {
 				toBoolFunc := dataCtx.Get("ToBool")
 				So(toBoolFunc, ShouldNotBeNil)
-				
+
 				value, err := toBoolFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				toBool := value.Interface().(func(string) (bool, error))
-				
+
 				result1, err1 := toBool("true")
 				So(err1, ShouldBeNil)
 				So(result1, ShouldBeTrue)
-				
+
 				result2, err2 := toBool("false")
 				So(err2, ShouldBeNil)
 				So(result2, ShouldBeFalse)
-				
+
 				// 测试错误情况
 				_, err = toBool("invalid")
 				So(err, ShouldNotBeNil)
 			})
-			
+
 			Convey("IF() 条件函数", func() {
 				ifFunc := dataCtx.Get("IF")
 				So(ifFunc, ShouldNotBeNil)
-				
+
 				value, err := ifFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				ifCondition := value.Interface().(func(bool, interface{}, interface{}) interface{})
-				
+
 				result1 := ifCondition(true, "yes", "no")
 				So(result1, ShouldEqual, "yes")
-				
+
 				result2 := ifCondition(false, "yes", "no")
 				So(result2, ShouldEqual, "no")
 			})
-			
+
 			Convey("IsNotEmpty() 非空检查", func() {
 				isNotEmptyFunc := dataCtx.Get("IsNotEmpty")
 				So(isNotEmptyFunc, ShouldNotBeNil)
-				
+
 				value, err := isNotEmptyFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				isNotEmpty := value.Interface().(func(interface{}) bool)
-				
+
 				So(isNotEmpty(nil), ShouldBeFalse)
 				So(isNotEmpty(""), ShouldBeFalse)
 				So(isNotEmpty("hello"), ShouldBeTrue)
@@ -908,50 +909,50 @@ func TestEngineFunctionsMissing(t *testing.T) {
 				So(isNotEmpty([]interface{}{1, 2, 3}), ShouldBeTrue)
 			})
 		})
-		
+
 		Convey("更多验证函数测试", func() {
-			
+
 			Convey("IsIDCard() 身份证验证", func() {
 				isIDCardFunc := dataCtx.Get("IsIDCard")
 				So(isIDCardFunc, ShouldNotBeNil)
-				
+
 				value, err := isIDCardFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				isIDCard := value.Interface().(func(string) bool)
-				So(isIDCard("123456789012345678"), ShouldBeTrue)  // 18位数字
-				So(isIDCard("12345678901234567X"), ShouldBeTrue)  // 17位数字+X
-				So(isIDCard("12345"), ShouldBeFalse)              // 太短
+				So(isIDCard("123456789012345678"), ShouldBeTrue)   // 18位数字
+				So(isIDCard("12345678901234567X"), ShouldBeTrue)   // 17位数字+X
+				So(isIDCard("12345"), ShouldBeFalse)               // 太短
 				So(isIDCard("1234567890123456789"), ShouldBeFalse) // 太长
 			})
-			
+
 			Convey("Between() 范围检查", func() {
 				betweenFunc := dataCtx.Get("Between")
 				So(betweenFunc, ShouldNotBeNil)
-				
+
 				value, err := betweenFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				between := value.Interface().(func(float64, float64, float64) bool)
 				So(between(5.0, 1.0, 10.0), ShouldBeTrue)
 				So(between(15.0, 1.0, 10.0), ShouldBeFalse)
 				So(between(-5.0, 1.0, 10.0), ShouldBeFalse)
 			})
-			
+
 			Convey("LengthBetween() 长度范围检查", func() {
 				lengthBetweenFunc := dataCtx.Get("LengthBetween")
 				So(lengthBetweenFunc, ShouldNotBeNil)
-				
+
 				value, err := lengthBetweenFunc.GetValue()
 				So(err, ShouldBeNil)
-				
+
 				lengthBetween := value.Interface().(func(string, int, int) bool)
 				So(lengthBetween("hello", 3, 8), ShouldBeTrue)
 				So(lengthBetween("hi", 3, 8), ShouldBeFalse)
 				So(lengthBetween("verylongstring", 3, 8), ShouldBeFalse)
 			})
 		})
-		
+
 		Convey("isEmpty函数边界测试", func() {
 			// 测试各种类型的isEmpty
 			So(engine.isEmpty(nil), ShouldBeTrue)

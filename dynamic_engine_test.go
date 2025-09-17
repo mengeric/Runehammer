@@ -6,16 +6,17 @@ import (
 	"time"
 
 	logger "gitee.com/damengde/runehammer/logger"
+	"gitee.com/damengde/runehammer/rule"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 // 测试用结构体定义
 type TestCustomer struct {
-	Age          int     `json:"age"`
-	Name         string  `json:"name"`
-	VipLevel     int     `json:"vip_level"`
-	Income       float64 `json:"income"`
-	PurchaseCount int    `json:"purchase_count"`
+	Age           int     `json:"age"`
+	Name          string  `json:"name"`
+	VipLevel      int     `json:"vip_level"`
+	Income        float64 `json:"income"`
+	PurchaseCount int     `json:"purchase_count"`
 }
 
 type TestOrder struct {
@@ -31,9 +32,9 @@ type TestInput struct {
 // testValidator 实现 RuleValidator 接口的测试验证器
 type testValidator struct{}
 
-func (tv *testValidator) Validate(definition interface{}) []ValidationError {
-	if sr, ok := definition.(SimpleRule); ok && sr.When == "" {
-		return []ValidationError{
+func (tv *testValidator) Validate(definition interface{}) []rule.ValidationError {
+	if sr, ok := definition.(rule.SimpleRule); ok && sr.When == "" {
+		return []rule.ValidationError{
 			{
 				Message: "规则条件不能为空",
 				Field:   "When",
@@ -60,7 +61,7 @@ func TestDynamicEngine(t *testing.T) {
 
 		Convey("执行简单规则", func() {
 			// 定义简单规则 - 使用结构体字段访问
-			simpleRule := SimpleRule{
+			simpleRule := rule.SimpleRule{
 				When: "testinput.Customer.Age >= 18",
 				Then: map[string]string{
 					"Result.Eligible": "true",
@@ -87,7 +88,7 @@ func TestDynamicEngine(t *testing.T) {
 		})
 
 		Convey("执行指标规则", func() {
-			metricRule := MetricRule{
+			metricRule := rule.MetricRule{
 				Name:        "customer_score",
 				Description: "客户评分计算",
 				Formula:     "age_score + income_score",
@@ -115,20 +116,20 @@ func TestDynamicEngine(t *testing.T) {
 		})
 
 		Convey("执行标准规则", func() {
-			standardRule := StandardRule{
+			standardRule := rule.StandardRule{
 				ID:          "vip_check",
 				Name:        "VIP客户检查",
 				Description: "检查客户是否为VIP",
 				Priority:    100,
 				Enabled:     true,
 				Tags:        []string{"vip", "customer"},
-				Conditions: Condition{
+				Conditions: rule.Condition{
 					Type:     "simple",
 					Left:     "testinput.Customer.VipLevel",
 					Operator: ">=",
 					Right:    3,
 				},
-				Actions: []Action{
+				Actions: []rule.Action{
 					{
 						Type:   "assign",
 						Target: "Result.IsVip",
@@ -156,13 +157,13 @@ func TestDynamicEngine(t *testing.T) {
 
 		Convey("批量执行规则", func() {
 			rules := []interface{}{
-				SimpleRule{
+				rule.SimpleRule{
 					When: "testinput.Order.Amount > 500",
 					Then: map[string]string{
 						"Result.FreeShipping": "true",
 					},
 				},
-				MetricRule{
+				rule.MetricRule{
 					Name:    "loyalty_score",
 					Formula: "purchase_count * 10",
 					Variables: map[string]string{
@@ -200,7 +201,7 @@ func TestDynamicEngine(t *testing.T) {
 			})
 
 			// 使用自定义函数的规则
-			rule := SimpleRule{
+			rule := rule.SimpleRule{
 				When: "ValidateAge(testinput.Customer.Age)",
 				Then: map[string]string{
 					"Result.Discount": "CalculateDiscount(testinput.Order.Amount, 0.1)",
@@ -224,7 +225,7 @@ func TestDynamicEngine(t *testing.T) {
 
 		Convey("错误处理", func() {
 			Convey("无效规则", func() {
-				invalidRule := SimpleRule{
+				invalidRule := rule.SimpleRule{
 					When: "invalid syntax here",
 					Then: map[string]string{
 						"Result.Test": "true",
@@ -240,7 +241,7 @@ func TestDynamicEngine(t *testing.T) {
 			})
 
 			Convey("空规则", func() {
-				emptyRule := SimpleRule{}
+				emptyRule := rule.SimpleRule{}
 				input := TestInput{Customer: TestCustomer{Age: 25}}
 
 				_, err := engine.ExecuteRuleDefinition(context.Background(), emptyRule, input)
@@ -248,7 +249,7 @@ func TestDynamicEngine(t *testing.T) {
 			})
 
 			Convey("Map类型输入应该失败", func() {
-				rule := SimpleRule{
+				rule := rule.SimpleRule{
 					When: "true",
 					Then: map[string]string{
 						"Result.Test": "true",
@@ -269,7 +270,7 @@ func TestDynamicEngine(t *testing.T) {
 		Convey("引擎管理功能", func() {
 			Convey("超时执行", func() {
 				// 创建一个会超时的规则
-				timeoutRule := SimpleRule{
+				timeoutRule := rule.SimpleRule{
 					When: "testinput.Customer.Age >= 0", // 简单条件
 					Then: map[string]string{
 						"Result.Processed": "true",
@@ -291,7 +292,7 @@ func TestDynamicEngine(t *testing.T) {
 				engine.RegisterValidator(validator)
 
 				// 测试验证器生效
-				invalidRule := SimpleRule{
+				invalidRule := rule.SimpleRule{
 					When: "", // 空条件应该触发验证错误
 					Then: map[string]string{"Result.Test": "true"},
 				}
@@ -310,22 +311,22 @@ func TestDynamicEngine(t *testing.T) {
 
 			Convey("缓存管理", func() {
 				// 先执行一个规则来填充缓存
-				rule := SimpleRule{
+				rule := rule.SimpleRule{
 					When: "testinput.Customer.Age >= 18",
 					Then: map[string]string{"Result.Cached": "true"},
 				}
 				input := TestInput{Customer: TestCustomer{Age: 25}}
-				
+
 				_, err := engine.ExecuteRuleDefinition(context.Background(), rule, input)
 				So(err, ShouldBeNil)
 
 				// 获取缓存统计
 				stats := engine.GetCacheStats()
 				So(stats, ShouldNotBeNil)
-				
+
 				// 清理缓存
 				engine.ClearCache()
-				
+
 				// 再次获取统计，应该显示缓存已清空
 				statsAfterClear := engine.GetCacheStats()
 				So(statsAfterClear, ShouldNotBeNil)
@@ -344,11 +345,11 @@ func TestDynamicEngine(t *testing.T) {
 				)
 
 				rules := []interface{}{
-					SimpleRule{
+					rule.SimpleRule{
 						When: "testinput.Customer.Age >= 18",
 						Then: map[string]string{"Result.Adult": "true"},
 					},
-					SimpleRule{
+					rule.SimpleRule{
 						When: "testinput.Order.Amount > 100",
 						Then: map[string]string{"Result.HighValue": "true"},
 					},
@@ -369,7 +370,7 @@ func TestDynamicEngine(t *testing.T) {
 
 		Convey("数据注入测试", func() {
 			Convey("非结构体类型数据注入", func() {
-				rule := SimpleRule{
+				rule := rule.SimpleRule{
 					When: "Params > 100", // 对于非结构体类型，使用 Params 访问
 					Then: map[string]string{"Result.Large": "true"},
 				}
@@ -381,7 +382,7 @@ func TestDynamicEngine(t *testing.T) {
 			})
 
 			Convey("字符串类型数据注入", func() {
-				rule := SimpleRule{
+				rule := rule.SimpleRule{
 					When: "Params == \"test\"",
 					Then: map[string]string{"Result.Matched": "true"},
 				}
