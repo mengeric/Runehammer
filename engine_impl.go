@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
@@ -26,8 +27,8 @@ type engineImpl[T any] struct {
 	// 核心配置和依赖
 	config    *config.Config  // 引擎配置信息 - 使用config包的Config类型
 	mapper    RuleMapper     // 规则数据访问接口
-	cache     Cache           // 缓存接口（Redis或内存）
-	cacheKeys CacheKeyBuilder // 缓存键构建器
+	cache     cache.Cache           // 缓存接口（Redis或内存）
+	cacheKeys cache.CacheKeyBuilder // 缓存键构建器
 	logger    logger.Logger // 日志接口
 
 	// Grule引擎相关
@@ -44,8 +45,8 @@ type engineImpl[T any] struct {
 func NewEngineImpl[T any](
 	cfg *config.Config,  // 使用config包的Config类型
 	mapper RuleMapper,
-	cache Cache,
-	cacheKeys CacheKeyBuilder,
+	cache cache.Cache,
+	cacheKeys cache.CacheKeyBuilder,
 	logger logger.Logger,
 	knowledgeLibrary *ast.KnowledgeLibrary,
 	knowledgeBases *sync.Map,
@@ -171,12 +172,19 @@ func (e *engineImpl[T]) getRules(ctx context.Context, bizCode string) ([]*Rule, 
 		data, err := e.cache.Get(ctx, cacheKey)
 		if err == nil {
 			// 反序列化缓存数据
-			var cacheItem RuleCacheItem
+			var cacheItem cache.RuleCacheItem
 			if err := cacheItem.FromBytes(data); err == nil {
 				if e.logger != nil {
 					e.logger.Debugf(ctx, "从缓存获取规则成功", "bizCode", bizCode, "count", len(cacheItem.Rules))
 				}
-				return cacheItem.Rules, nil
+				// Convert cache.Rule (interface{}) back to []*Rule
+				rules := make([]*Rule, len(cacheItem.Rules))
+				for i, r := range cacheItem.Rules {
+					if rule, ok := r.(*Rule); ok {
+						rules[i] = rule
+					}
+				}
+				return rules, nil
 			}
 		}
 	}
@@ -189,8 +197,14 @@ func (e *engineImpl[T]) getRules(ctx context.Context, bizCode string) ([]*Rule, 
 
 	// 3. 更新缓存
 	if e.cache != nil && len(rules) > 0 {
-		cacheItem := RuleCacheItem{
-			Rules:     rules,
+		// Convert []*Rule to []cache.Rule ([]interface{})
+		cacheRules := make([]cache.Rule, len(rules))
+		for i, rule := range rules {
+			cacheRules[i] = rule
+		}
+		
+		cacheItem := cache.RuleCacheItem{
+			Rules:     cacheRules,
 			UpdatedAt: time.Now(),
 			Version:   1,
 		}

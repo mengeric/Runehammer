@@ -1,6 +1,6 @@
-package runehammer
+package cache
 
-//go:generate mockgen -source=cache.go -destination=cache_mock.go -package=runehammer
+//go:generate mockgen -source=cache.go -destination=cache_mock.go -package=cache
 
 import (
 	"context"
@@ -102,6 +102,11 @@ func (CacheKeyBuilder) MetaKey(bizCode string) string {
 // 缓存数据结构 - 规则缓存项的序列化支持
 // ============================================================================
 
+// Rule 规则类型 - 为了避免循环依赖，这里需要重新定义或者使用接口
+// 注意：这里需要从主包导入Rule类型，但为了避免循环依赖，我们先保持这个定义
+// 在实际使用中，可能需要将Rule类型也移到单独的包中，或者使用interface{}
+type Rule interface{}
+
 // RuleCacheItem 规则缓存项 - 用于缓存规则数据的结构体
 //
 // 功能:
@@ -109,7 +114,7 @@ func (CacheKeyBuilder) MetaKey(bizCode string) string {
 //   - 支持JSON序列化和反序列化
 //   - 版本控制和更新时间跟踪
 type RuleCacheItem struct {
-	Rules     []*Rule `json:"rules"`      // 规则列表
+	Rules     []Rule    `json:"rules"`      // 规则列表
 	UpdatedAt time.Time `json:"updated_at"` // 更新时间
 	Version   int       `json:"version"`    // 版本号
 }

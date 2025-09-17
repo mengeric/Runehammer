@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
 	"go.uber.org/mock/gomock"
@@ -23,14 +24,14 @@ func TestEngineFunctions(t *testing.T) {
 		// 创建测试用的引擎实例
 		cfg := config.DefaultConfig()
 		mapper := NewMockRuleMapper(ctrl)
-		cache := NewMockCache(ctrl)
-		cacheKeys := CacheKeyBuilder{}
+		cacheImpl := cache.NewMockCache(ctrl)
+		cacheKeys := cache.CacheKeyBuilder{}
 		lgr := logger.NewNoopLogger()
 		knowledgeLibrary := ast.NewKnowledgeLibrary()
 		cronScheduler := cron.New()
 
 		engine := NewEngineImpl[map[string]any](
-			cfg, mapper, cache, cacheKeys, lgr,
+			cfg, mapper, cacheImpl, cacheKeys, lgr,
 			knowledgeLibrary, &sync.Map{}, cronScheduler, false,
 		)
 
@@ -510,14 +511,14 @@ func TestEngineFunctionsMissing(t *testing.T) {
 		// 创建测试用的引擎实例
 		cfg := config.DefaultConfig()
 		mapper := NewMockRuleMapper(ctrl)
-		cache := NewMockCache(ctrl)
-		cacheKeys := CacheKeyBuilder{}
+		cacheImpl := cache.NewMockCache(ctrl)
+		cacheKeys := cache.CacheKeyBuilder{}
 		lgr := logger.NewNoopLogger()
 		knowledgeLibrary := ast.NewKnowledgeLibrary()
 		cronScheduler := cron.New()
 
 		engine := NewEngineImpl[map[string]any](
-			cfg, mapper, cache, cacheKeys, lgr,
+			cfg, mapper, cacheImpl, cacheKeys, lgr,
 			knowledgeLibrary, &sync.Map{}, cronScheduler, false,
 		)
 

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
 	"github.com/robfig/cron/v3"
@@ -33,8 +34,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -67,8 +68,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -97,8 +98,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -123,8 +124,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -152,8 +153,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -175,8 +176,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewDefaultLogger(),
 					nil,
 					&sync.Map{},
@@ -197,8 +198,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -234,8 +235,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -280,8 +281,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -311,12 +312,12 @@ func TestEngineLifecycle(t *testing.T) {
 
 			Convey("正常刷新缓存", func() {
 				config := &config.Config{DSN: "mock"}
-				cache := NewMemoryCache(1000)
+				cacheImpl := cache.NewMemoryCache(1000)
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					cache,
-					CacheKeyBuilder{},
+					cacheImpl,
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -343,18 +344,18 @@ func TestEngineLifecycle(t *testing.T) {
 				So(exists, ShouldBeFalse)
 
 				engine.Close()
-				cache.Close()
+				cacheImpl.Close()
 			})
 
 			Convey("带缓存组件的刷新", func() {
-				cache := NewMemoryCache(1000)
+				cacheImpl := cache.NewMemoryCache(1000)
 				config := &config.Config{DSN: "mock"}
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					cache,
-					CacheKeyBuilder{},
+					cacheImpl,
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -368,10 +369,10 @@ func TestEngineLifecycle(t *testing.T) {
 				// 设置缓存数据
 				ctx := context.Background()
 				cacheKey := engine.cacheKeys.RuleKey(bizCode)
-				cache.Set(ctx, cacheKey, []byte("cached_rules"), time.Hour)
+				cacheImpl.Set(ctx, cacheKey, []byte("cached_rules"), time.Hour)
 
 				// 验证缓存存在
-				data, err := cache.Get(ctx, cacheKey)
+				data, err := cacheImpl.Get(ctx, cacheKey)
 				So(err, ShouldBeNil)
 				So(data, ShouldNotBeNil)
 
@@ -379,7 +380,7 @@ func TestEngineLifecycle(t *testing.T) {
 				engine.refreshCache(bizCode)
 
 				engine.Close()
-				cache.Close()
+				cacheImpl.Close()
 			})
 
 			Convey("带日志的刷新", func() {
@@ -388,8 +389,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewDefaultLogger(),
 					nil,
 					&sync.Map{},
@@ -411,8 +412,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -438,7 +439,7 @@ func TestEngineLifecycle(t *testing.T) {
 					config,
 					NewMockRuleMapper(ctrl),
 					nil, // 无缓存
-					CacheKeyBuilder{},
+					cache.CacheKeyBuilder{},
 					nil, // 无日志
 					nil,
 					&sync.Map{},
@@ -459,7 +460,7 @@ func TestEngineLifecycle(t *testing.T) {
 			})
 
 			Convey("完整配置的统计信息", func() {
-				cache := NewMemoryCache(1000)
+				cacheImpl := cache.NewMemoryCache(1000)
 				logger := logger.NewDefaultLogger()
 				syncInterval := 5 * time.Minute
 
@@ -471,8 +472,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					cache,
-					CacheKeyBuilder{},
+					cacheImpl,
+					cache.CacheKeyBuilder{},
 					logger,
 					nil,
 					&sync.Map{},
@@ -494,7 +495,7 @@ func TestEngineLifecycle(t *testing.T) {
 				So(stats["logger_enabled"], ShouldBeTrue)
 
 				engine.Close()
-				cache.Close()
+				cacheImpl.Close()
 			})
 
 			Convey("关闭后的统计信息", func() {
@@ -502,8 +503,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -525,8 +526,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -553,7 +554,7 @@ func TestEngineLifecycle(t *testing.T) {
 		Convey("生命周期集成测试", func() {
 
 			Convey("完整生命周期流程", func() {
-				cache := NewMemoryCache(1000)
+				cacheImpl := cache.NewMemoryCache(1000)
 				logger := logger.NewNoopLogger() // 使用NoopLogger避免测试输出干扰
 
 				config := &config.Config{
@@ -564,8 +565,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					cache,
-					CacheKeyBuilder{},
+					cacheImpl,
+					cache.CacheKeyBuilder{},
 					logger,
 					nil,
 					&sync.Map{},
@@ -603,7 +604,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				// 7. 关闭引擎
 				engine.Close()
-				cache.Close()
+				cacheImpl.Close()
 
 				// 8. 验证关闭状态
 				stats = engine.getStats()
@@ -619,8 +620,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -698,7 +699,7 @@ func TestEngineLifecycle(t *testing.T) {
 			})
 
 			Convey("资源清理验证", func() {
-				cache := NewMemoryCache(1000)
+				cacheImpl := cache.NewMemoryCache(1000)
 
 				config := &config.Config{
 					DSN:          "mock",
@@ -708,8 +709,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					cache,
-					CacheKeyBuilder{},
+					cacheImpl,
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -734,7 +735,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				// 关闭引擎
 				engine.Close()
-				cache.Close()
+				cacheImpl.Close()
 
 				// 验证状态已更新
 				stats = engine.getStats()
@@ -758,8 +759,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -782,8 +783,8 @@ func TestEngineLifecycle(t *testing.T) {
 					engine := NewEngineImpl[map[string]interface{}](
 						config,
 						NewMockRuleMapper(ctrl),
-						NewMemoryCache(1000),
-						CacheKeyBuilder{},
+						cache.NewMemoryCache(1000),
+						cache.CacheKeyBuilder{},
 						logger.NewNoopLogger(),
 						nil,
 						&sync.Map{},
@@ -803,8 +804,8 @@ func TestEngineLifecycle(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -841,8 +842,8 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -867,8 +868,8 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -895,8 +896,8 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -940,8 +941,8 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},
@@ -978,8 +979,8 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
 					NewMockRuleMapper(ctrl),
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					&sync.Map{},

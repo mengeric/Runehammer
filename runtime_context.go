@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
 	"github.com/redis/go-redis/v9"
@@ -22,7 +23,7 @@ import (
 type RuntimeContext struct {
 	// 实例对象
 	DB     *gorm.DB // 数据库连接实例
-	Cache  Cache    // 缓存实例
+	Cache  cache.Cache    // 缓存实例
 	Logger logger.Logger   // 日志实例
 
 	// 组件对象
@@ -132,12 +133,12 @@ func (ctx *RuntimeContext) setupCache() error {
 			return fmt.Errorf("Redis连接失败: %w", err)
 		}
 
-		ctx.Cache = NewRedisCache(client)
+		ctx.Cache = cache.NewRedisCache(client)
 		return nil
 	}
 
 	// 使用内存缓存
-	ctx.Cache = NewMemoryCache(config.MaxCacheSize)
+	ctx.Cache = cache.NewMemoryCache(config.MaxCacheSize)
 	return nil
 }
 

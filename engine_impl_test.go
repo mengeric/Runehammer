@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
 	"go.uber.org/mock/gomock"
@@ -24,15 +25,15 @@ func TestEngineImpl(t *testing.T) {
 		Convey("引擎创建", func() {
 			cfg := config.DefaultConfig()
 			mapper := NewMockRuleMapper(ctrl)
-			cache := NewMockCache(ctrl)
-			cacheKeys := CacheKeyBuilder{}
+			cacheImpl := cache.NewMockCache(ctrl)
+			cacheKeys := cache.CacheKeyBuilder{}
 			lgr := logger.NewNoopLogger()
 			knowledgeLibrary := ast.NewKnowledgeLibrary()
 			knowledgeBases := &sync.Map{}
 			cronScheduler := cron.New()
 			
 			engine := NewEngineImpl[map[string]any](
-				cfg, mapper, cache, cacheKeys, lgr,
+				cfg, mapper, cacheImpl, cacheKeys, lgr,
 				knowledgeLibrary, knowledgeBases, cronScheduler, false,
 			)
 			
@@ -42,15 +43,15 @@ func TestEngineImpl(t *testing.T) {
 		Convey("执行规则", func() {
 			cfg := config.DefaultConfig()
 			mapper := NewMockRuleMapper(ctrl)
-			cache := NewMockCache(ctrl)
-			cacheKeys := CacheKeyBuilder{}
+			cacheImpl := cache.NewMockCache(ctrl)
+			cacheKeys := cache.CacheKeyBuilder{}
 			lgr := logger.NewNoopLogger()
 			knowledgeLibrary := ast.NewKnowledgeLibrary()
 			knowledgeBases := &sync.Map{}
 			cronScheduler := cron.New()
 			
 			engine := NewEngineImpl[map[string]any](
-				cfg, mapper, cache, cacheKeys, lgr,
+				cfg, mapper, cacheImpl, cacheKeys, lgr,
 				knowledgeLibrary, knowledgeBases, cronScheduler, false,
 			)
 
@@ -111,21 +112,21 @@ func TestEngineImpl(t *testing.T) {
 		Convey("引擎关闭", func() {
 			cfg := config.DefaultConfig()
 			mapper := NewMockRuleMapper(ctrl)
-			cache := NewMockCache(ctrl)
-			cacheKeys := CacheKeyBuilder{}
+			cacheImpl := cache.NewMockCache(ctrl)
+			cacheKeys := cache.CacheKeyBuilder{}
 			lgr := logger.NewNoopLogger()
 			knowledgeLibrary := ast.NewKnowledgeLibrary()
 			knowledgeBases := &sync.Map{}
 			cronScheduler := cron.New()
 			
 			engine := NewEngineImpl[map[string]any](
-				cfg, mapper, cache, cacheKeys, lgr,
+				cfg, mapper, cacheImpl, cacheKeys, lgr,
 				knowledgeLibrary, knowledgeBases, cronScheduler, false,
 			)
 
 			Convey("正常关闭", func() {
 				// 设置cache close期望
-				cache.EXPECT().Close().Return(nil)
+				cacheImpl.EXPECT().Close().Return(nil)
 				
 				err := engine.Close()
 				So(err, ShouldBeNil)
@@ -139,7 +140,7 @@ func TestEngineImpl(t *testing.T) {
 
 			Convey("重复关闭", func() {
 				// 设置cache close期望 - 可能被调用多次
-				cache.EXPECT().Close().Return(nil).AnyTimes()
+				cacheImpl.EXPECT().Close().Return(nil).AnyTimes()
 				
 				err1 := engine.Close()
 				So(err1, ShouldBeNil)
@@ -171,15 +172,15 @@ func TestEngineImpl(t *testing.T) {
 			Convey("使用真实数据库映射器", func() {
 				cfg := config.DefaultConfig()
 				mapper := NewRuleMapper(db)
-				cache := NewMockCache(ctrl)
-				cacheKeys := CacheKeyBuilder{}
+				cacheImpl := cache.NewMockCache(ctrl)
+				cacheKeys := cache.CacheKeyBuilder{}
 				lgr := logger.NewNoopLogger()
 				knowledgeLibrary := ast.NewKnowledgeLibrary()
 				knowledgeBases := &sync.Map{}
 				cronScheduler := cron.New()
 				
 				engine := NewEngineImpl[map[string]any](
-					cfg, mapper, cache, cacheKeys, lgr,
+					cfg, mapper, cacheImpl, cacheKeys, lgr,
 					knowledgeLibrary, knowledgeBases, cronScheduler, false,
 				)
 

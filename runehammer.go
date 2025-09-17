@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
 	"github.com/hyperjumptech/grule-rule-engine/ast"
@@ -309,7 +310,7 @@ func New[T any](opts ...Option) (Engine[T], error) {
 		cfg,                     // 仍然传递Config保持兼容性
 		ctx.RuleMapper,          // 但使用RuntimeContext中的实例
 		ctx.Cache,
-		CacheKeyBuilder{},
+		cache.CacheKeyBuilder{},
 		ctx.Logger,
 		ast.NewKnowledgeLibrary(),
 		&sync.Map{},
@@ -415,7 +416,7 @@ func WithDB(db interface{}) Option {
 }
 
 // WithCache 配置缓存实例（向后兼容）
-func WithCache(cache Cache) Option {
+func WithCache(cache cache.Cache) Option {
 	return func(c *config.Config) {
 		c.EnableCache = cache != nil
 		// 实际缓存实例的处理在NewRuntimeContext中
@@ -439,7 +440,7 @@ func WithDatabase(db *gorm.DB) ContextOption {
 }
 
 // WithCacheInstance 使用指定的缓存实例
-func WithCacheInstance(cache Cache) ContextOption {
+func WithCacheInstance(cache cache.Cache) ContextOption {
 	return func(ctx *RuntimeContext) error {
 		ctx.Cache = cache
 		return nil

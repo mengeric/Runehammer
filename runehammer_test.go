@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"gitee.com/damengde/runehammer/cache"
 	"gitee.com/damengde/runehammer/config"
 	logger "gitee.com/damengde/runehammer/logger"
 	. "github.com/smartystreets/goconvey/convey"
@@ -60,8 +61,8 @@ func TestRunehammer(t *testing.T) {
 				engine = NewEngineImpl[map[string]interface{}](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -88,8 +89,8 @@ func TestRunehammer(t *testing.T) {
 				stringEngine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -107,8 +108,8 @@ func TestRunehammer(t *testing.T) {
 				structEngine := NewEngineImpl[TestResult](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -123,8 +124,8 @@ func TestRunehammer(t *testing.T) {
 				sliceEngine := NewEngineImpl[[]string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -158,7 +159,7 @@ func TestRunehammer(t *testing.T) {
 					// 这个测试需要真实的外部依赖
 					engine, err := New[map[string]interface{}](
 						WithDSN("mysql://user:pass@localhost/test"),
-						WithCache(NewMemoryCache(1000)),
+						WithCache(cache.NewMemoryCache(1000)),
 						WithLogger(logger.NewDefaultLogger()),
 						WithAutoMigrate(),
 					)
@@ -200,8 +201,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					&config.Config{DSN: "mock"},
 					mapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -228,8 +229,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -275,8 +276,8 @@ func TestRunehammer(t *testing.T) {
 				stringEngine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -289,8 +290,8 @@ func TestRunehammer(t *testing.T) {
 				intEngine := NewEngineImpl[int](
 					&config.Config{DSN: "mock"},
 					mapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -308,8 +309,8 @@ func TestRunehammer(t *testing.T) {
 				structEngine := NewEngineImpl[Result](
 					&config.Config{DSN: "mock"},
 					mapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -345,8 +346,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -366,8 +367,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -391,8 +392,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -425,8 +426,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -449,8 +450,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -473,8 +474,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -501,8 +502,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -527,8 +528,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -560,8 +561,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -587,8 +588,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -625,8 +626,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -677,8 +678,8 @@ func TestRunehammer(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -896,8 +897,8 @@ func TestRunehammerIntegration(t *testing.T) {
 					NewEngineImpl[string](
 						&config.Config{DSN: "mock"},
 						mockMapper1,
-						NewMemoryCache(1000),
-						CacheKeyBuilder{},
+						cache.NewMemoryCache(1000),
+						cache.CacheKeyBuilder{},
 						logger.NewNoopLogger(),
 						nil,
 						nil,
@@ -908,7 +909,7 @@ func TestRunehammerIntegration(t *testing.T) {
 						&config.Config{DSN: "mock"},
 						mockMapper2,
 						nil, // 无缓存
-						CacheKeyBuilder{},
+						cache.CacheKeyBuilder{},
 						logger.NewDefaultLogger(),
 						nil,
 						nil,
@@ -944,8 +945,8 @@ func TestRunehammerIntegration(t *testing.T) {
 				engine := NewEngineImpl[map[string]interface{}](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -1016,8 +1017,8 @@ func TestRunehammerIntegration(t *testing.T) {
 				engine := NewEngineImpl[string](
 					&config.Config{DSN: "mock"},
 					mockMapper,
-					NewMemoryCache(1000),
-					CacheKeyBuilder{},
+					cache.NewMemoryCache(1000),
+					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
 					nil,
 					nil,
@@ -1292,7 +1293,7 @@ func TestRunehammerIntegration(t *testing.T) {
 				engine, err := New[map[string]interface{}](
 					WithDSN("sqlite:file:version_test.db?mode=memory&cache=shared&_fk=1"),
 					WithAutoMigrate(),
-					WithCache(NewMemoryCache(50)),
+					WithCache(cache.NewMemoryCache(50)),
 					WithLogger(logger.NewNoopLogger()),
 				)
 
