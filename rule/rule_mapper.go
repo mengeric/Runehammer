@@ -1,6 +1,6 @@
 package rule
 
-//go:generate mockgen -source=rule.go -destination=rule_mock.go -package=rule
+//go:generate mockgen -source=rule.go -destination=rule_mapper_mock.go -package=rule
 
 import (
 	"context"
