@@ -14,6 +14,8 @@ import (
 	"gitee.com/damengde/runehammer/rule"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.uber.org/mock/gomock"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 // 集成测试用的数据结构定义
@@ -38,6 +40,233 @@ type TestResult struct {
 	Count     int         `json:"count"`
 	Id        int         `json:"id"`
 	Processed bool        `json:"processed"`
+}
+
+type stubCache struct {
+	closeErr error
+}
+
+func (s *stubCache) Get(ctx context.Context, key string) ([]byte, error) {
+	return nil, fmt.Errorf("not found")
+}
+func (s *stubCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
+	return nil
+}
+func (s *stubCache) Del(ctx context.Context, key string) error { return nil }
+func (s *stubCache) Close() error                              { return s.closeErr }
+
+// --- 额外覆盖率测试 ---
+
+func TestConvertToTypeAndOptions(t *testing.T) {
+	Convey("convertToType 辅助函数", t, func() {
+		Convey("map 类型直接返回", func() {
+			input := map[string]interface{}{"key": "value"}
+			result, err := convertToType[map[string]interface{}](input)
+			So(err, ShouldBeNil)
+			So(result["key"], ShouldEqual, "value")
+		})
+
+		Convey("map 转结构体成功", func() {
+			type target struct {
+				Key string `json:"key"`
+			}
+			input := map[string]interface{}{"key": "value"}
+			result, err := convertToType[target](input)
+			So(err, ShouldBeNil)
+			So(result.Key, ShouldEqual, "value")
+		})
+
+		Convey("无法序列化时返回错误", func() {
+			type target struct {
+				Ch chan int `json:"ch"`
+			}
+			input := map[string]interface{}{"ch": make(chan int)}
+			_, err := convertToType[target](input)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("结果类型转换失败", func() {
+			type target int
+			input := map[string]interface{}{"key": "value"}
+			_, err := convertToType[target](input)
+			So(err, ShouldNotBeNil)
+		})
+	})
+
+	Convey("Option 配置应用", t, func() {
+		cfg := config.DefaultConfig()
+		ctx := newRuntimeContext(cfg)
+
+		Convey("WithDSN 修改配置", func() {
+			So(WithDSN("sqlite:file:test.db")(ctx), ShouldBeNil)
+			So(ctx.config.DSN, ShouldEqual, "sqlite:file:test.db")
+		})
+
+		Convey("WithMemoryCache 设置内存参数", func() {
+			So(WithMemoryCache(123)(ctx), ShouldBeNil)
+			So(ctx.config.CacheType, ShouldEqual, config.CacheTypeMemory)
+			So(ctx.config.MaxCacheSize, ShouldEqual, 123)
+		})
+
+		Convey("WithRedisCache 设置 Redis 参数", func() {
+			So(WithRedisCache("localhost:6379", "pwd", 2)(ctx), ShouldBeNil)
+			So(ctx.config.CacheType, ShouldEqual, config.CacheTypeRedis)
+			So(ctx.config.RedisAddr, ShouldEqual, "localhost:6379")
+			So(ctx.config.RedisPassword, ShouldEqual, "pwd")
+			So(ctx.config.RedisDB, ShouldEqual, 2)
+		})
+
+		Convey("WithNoCache 禁用缓存", func() {
+			So(WithNoCache()(ctx), ShouldBeNil)
+			So(ctx.config.CacheType, ShouldEqual, config.CacheTypeNone)
+		})
+
+		Convey("WithCacheTTL 和 WithSyncInterval", func() {
+			So(WithCacheTTL(42*time.Second)(ctx), ShouldBeNil)
+			So(ctx.config.CacheTTL, ShouldEqual, 42*time.Second)
+			So(WithSyncInterval(3*time.Minute)(ctx), ShouldBeNil)
+			So(ctx.config.SyncInterval, ShouldEqual, 3*time.Minute)
+		})
+
+		Convey("WithCustomDB 注入数据库实例", func() {
+			db, err := gorm.Open(sqlite.Open("file:custom_db_test.db?mode=memory&cache=shared"), &gorm.Config{})
+			So(err, ShouldBeNil)
+			So(WithCustomDB(db)(ctx), ShouldBeNil)
+			So(ctx.DB, ShouldNotBeNil)
+			So(ctx.config.DSN, ShouldEqual, "__CUSTOM_DB__")
+		})
+
+		Convey("WithCustomCache 注入缓存", func() {
+			memCache := cache.NewMemoryCache(10)
+			So(WithCustomCache(memCache)(ctx), ShouldBeNil)
+			So(ctx.Cache, ShouldEqual, memCache)
+			So(ctx.config.CacheType, ShouldEqual, config.CacheTypeNone)
+		})
+
+		Convey("WithCustomLogger 注入日志器", func() {
+			lg := logger.NewDefaultLogger()
+			So(WithCustomLogger(lg)(ctx), ShouldBeNil)
+			So(ctx.Logger, ShouldEqual, lg)
+		})
+
+		Convey("WithCustomRuleMapper 注入 Mapper", func() {
+			mapper := rule.NewMockRuleMapper(gomock.NewController(t))
+			mapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).AnyTimes().Return([]*rule.Rule{}, nil)
+			So(WithCustomRuleMapper(mapper)(ctx), ShouldBeNil)
+			So(ctx.RuleMapper, ShouldEqual, mapper)
+		})
+	})
+}
+
+func TestRuntimeContextInitialize(t *testing.T) {
+	Convey("runtimeContext 初始化流程", t, func() {
+		cfg := config.DefaultConfig()
+		cfg.DSN = "sqlite:file:runtime_ctx.db?mode=memory&cache=shared&_fk=1"
+		ctx := newRuntimeContext(cfg)
+
+		So(ctx.initialize(), ShouldBeNil)
+		So(ctx.DB, ShouldNotBeNil)
+		So(ctx.Cache, ShouldNotBeNil)
+		So(ctx.Logger, ShouldNotBeNil)
+		So(ctx.RuleMapper, ShouldNotBeNil)
+
+		// 关闭以避免泄漏
+		sqlDB, err := ctx.DB.DB()
+		So(err, ShouldBeNil)
+		So(sqlDB.Close(), ShouldBeNil)
+	})
+
+	Convey("setupCache 分支覆盖", t, func() {
+		cfg := config.DefaultConfig()
+		ctx := newRuntimeContext(cfg)
+
+		Convey("CacheTypeNone", func() {
+			ctx.config.CacheType = config.CacheTypeNone
+			ctx.Cache = nil
+			So(ctx.setupCache(), ShouldBeNil)
+			So(ctx.Cache, ShouldBeNil)
+		})
+
+		Convey("无效缓存类型返回错误", func() {
+			ctx.config.CacheType = "unsupported"
+			err := ctx.setupCache()
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Redis 缺失配置报错", func() {
+			ctx.config.CacheType = config.CacheTypeRedis
+			ctx.config.RedisAddr = ""
+			err := ctx.setupCache()
+			So(err, ShouldNotBeNil)
+		})
+	})
+
+	Convey("setupDatabase 非SQLite 错误", t, func() {
+		cfg := config.DefaultConfig()
+		cfg.DSN = "mysql://user:pass@tcp(localhost:3306)/db"
+		ctx := newRuntimeContext(cfg)
+		err := ctx.setupDatabase()
+		So(err, ShouldNotBeNil)
+	})
+
+	Convey("runtimeContext Close 错误聚合", t, func() {
+		cfg := config.DefaultConfig()
+		ctx := newRuntimeContext(cfg)
+		ctx.Cache = &stubCache{closeErr: fmt.Errorf("cache close err")}
+
+		db, err := gorm.Open(sqlite.Open("file:close_err.db?mode=memory&cache=shared"), &gorm.Config{})
+		So(err, ShouldBeNil)
+		ctx.DB = db
+
+		sqlDB, err := ctx.DB.DB()
+		So(err, ShouldBeNil)
+		So(sqlDB.Close(), ShouldBeNil) // 先关闭使后续 Close 报错
+
+		err = ctx.Close()
+		So(err, ShouldNotBeNil)
+		So(err.Error(), ShouldContainSubstring, "cache close err")
+	})
+}
+
+func TestConvertMapToStructAndNewFactory(t *testing.T) {
+	Convey("convertMapToStruct 的不同分支", t, func() {
+		Convey("接口类型返回错误", func() {
+			input := map[string]interface{}{"a": 1}
+			_, err := convertMapToStruct[interface{}](input)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("结构体转换失败", func() {
+			type target struct {
+				N int `json:"n"`
+			}
+			input := map[string]interface{}{"n": make(chan int)}
+			_, err := convertMapToStruct[target](input)
+			So(err, ShouldNotBeNil)
+		})
+	})
+
+	Convey("New 工厂方法错误传播", t, func() {
+		badOpt := func(ctx *RuntimeContext) error {
+			return fmt.Errorf("boom")
+		}
+		eng, err := New[TestResult](WithDSN("sqlite:file:error_case.db?mode=memory&cache=shared&_fk=1"), badOpt)
+		So(err, ShouldNotBeNil)
+		So(eng, ShouldBeNil)
+		So(err.Error(), ShouldContainSubstring, "boom")
+	})
+
+	Convey("NewBaseEngine 和 TypedEngine", t, func() {
+		eng, err := NewBaseEngine(WithDSN("sqlite:file:base_engine.db?mode=memory&cache=shared&_fk=1"), WithAutoMigrate())
+		So(err, ShouldBeNil)
+		So(eng, ShouldNotBeNil)
+
+		typed := NewTypedEngine[TestResult](eng)
+		So(typed, ShouldNotBeNil)
+
+		// 关闭待办
+		So(eng.Close(), ShouldBeNil)
+	})
 }
 
 // TestRunehammer 测试主接口和工厂方法

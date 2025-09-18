@@ -175,6 +175,11 @@ func TestMemoryCacheDetailed(t *testing.T) {
 				// 新键应该存在
 				_, err = cache.Get(ctx, newKey)
 				So(err, ShouldBeNil)
+
+				// 再次添加，触发随机剔除分支
+				err = cache.Set(ctx, "another_key", []byte("another"), 1*time.Hour)
+				So(err, ShouldBeNil)
+				So(len(cache.(*MemoryCache).data) <= maxSize, ShouldBeTrue)
 			})
 			
 			Convey("过期项优先清理", func() {
@@ -476,6 +481,40 @@ func TestMemoryCacheDetailed(t *testing.T) {
 				}
 				delDuration := time.Since(start)
 				So(delDuration, ShouldBeLessThan, 1*time.Second)
+			})
+		})
+
+		Convey("异步删除和清理函数", func() {
+			cache := NewMemoryCache(10).(*MemoryCache)
+			defer cache.Close()
+			ctx := context.Background()
+
+			Convey("Get 触发异步删除", func() {
+				_ = cache.Set(ctx, "async_key", []byte("value"), 1*time.Nanosecond)
+				time.Sleep(1 * time.Millisecond)
+				_, err := cache.Get(ctx, "async_key")
+				So(err, ShouldNotBeNil)
+				time.Sleep(1 * time.Millisecond)
+				cache.mutex.RLock()
+				_, exists := cache.data["async_key"]
+				cache.mutex.RUnlock()
+				So(exists, ShouldBeFalse)
+			})
+
+			Convey("performCleanup 删除过期项", func() {
+				_ = cache.Set(ctx, "cleanup_key", []byte("value"), 1*time.Nanosecond)
+				time.Sleep(1 * time.Millisecond)
+				cache.performCleanup()
+				cache.mutex.RLock()
+				_, exists := cache.data["cleanup_key"]
+				cache.mutex.RUnlock()
+				So(exists, ShouldBeFalse)
+			})
+
+			Convey("Close 可重复调用", func() {
+				So(cache.Close(), ShouldBeNil)
+				time.Sleep(1 * time.Millisecond)
+				So(cache.Close(), ShouldBeNil)
 			})
 		})
 	})
