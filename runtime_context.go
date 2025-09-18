@@ -30,40 +30,41 @@ type RuntimeContext struct {
 	// 组件对象
 	RuleMapper rule.RuleMapper // 规则映射器
 
-	// 配置引用（只读）
+	// 配置
 	config *config.Config
 }
 
 // NewRuntimeContext 创建运行时上下文
-func NewRuntimeContext(cfg *config.Config, options ...ContextOption) (*RuntimeContext, error) {
-	ctx := &RuntimeContext{
-		config: cfg,
+func NewRuntimeContext(cfg *config.Config) (*RuntimeContext, error) {
+	ctx := newRuntimeContext(cfg)
+	if err := ctx.initialize(); err != nil {
+		return nil, err
 	}
+	return ctx, nil
+}
 
-	// 应用选项
-	for _, opt := range options {
-		if err := opt(ctx); err != nil {
-			return nil, err
-		}
-	}
+func newRuntimeContext(cfg *config.Config) *RuntimeContext {
+	return &RuntimeContext{config: cfg}
+}
 
+func (ctx *RuntimeContext) initialize() error {
 	// 初始化数据库
 	if ctx.DB == nil {
 		if err := ctx.setupDatabase(); err != nil {
-			return nil, fmt.Errorf("数据库初始化失败: %w", err)
+			return fmt.Errorf("数据库初始化失败: %w", err)
 		}
 	}
 
 	// 初始化缓存
 	if ctx.Cache == nil {
 		if err := ctx.setupCache(); err != nil {
-			return nil, fmt.Errorf("缓存初始化失败: %w", err)
+			return fmt.Errorf("缓存初始化失败: %w", err)
 		}
 	}
 
 	// 初始化日志
 	if ctx.Logger == nil {
-		ctx.Logger = logger.NewNoopLogger() // 默认使用无操作日志
+		ctx.Logger = logger.NewNoopLogger()
 	}
 
 	// 初始化规则映射器
@@ -74,11 +75,11 @@ func NewRuntimeContext(cfg *config.Config, options ...ContextOption) (*RuntimeCo
 	// 执行自动迁移
 	if ctx.config.AutoMigrate {
 		if err := ctx.DB.AutoMigrate(&rule.Rule{}); err != nil {
-			return nil, fmt.Errorf("数据库迁移失败: %w", err)
+			return fmt.Errorf("数据库迁移失败: %w", err)
 		}
 	}
 
-	return ctx, nil
+	return nil
 }
 
 // setupDatabase 初始化数据库连接
@@ -109,20 +110,15 @@ func (ctx *RuntimeContext) setupDatabase() error {
 
 // setupCache 初始化缓存系统
 func (ctx *RuntimeContext) setupCache() error {
-	config := ctx.config
+	cf := ctx.config
 
-	if !config.EnableCache {
-		ctx.Cache = nil
-		return nil
-	}
-
-	// 启动时确定缓存策略，优先级：Redis > Memory > None
-	if config.RedisAddr != "" {
-		// 尝试连接Redis
+	switch cf.CacheType {
+	case config.CacheTypeRedis:
+		// 创建Redis缓存
 		client := redis.NewClient(&redis.Options{
-			Addr:     config.RedisAddr,
-			Password: config.RedisPassword,
-			DB:       config.RedisDB,
+			Addr:     cf.RedisAddr,
+			Password: cf.RedisPassword,
+			DB:       cf.RedisDB,
 		})
 
 		// 测试Redis连接
@@ -130,17 +126,25 @@ func (ctx *RuntimeContext) setupCache() error {
 		defer cancel()
 
 		if err := client.Ping(pingCtx).Err(); err != nil {
-			// Redis连接失败，返回错误而不是降级
-			return err
+			return fmt.Errorf("Redis连接失败: %w", err)
 		}
 
 		ctx.Cache = cache.NewRedisCache(client)
 		return nil
-	}
 
-	// 使用内存缓存
-	ctx.Cache = cache.NewMemoryCache(config.MaxCacheSize)
-	return nil
+	case config.CacheTypeMemory:
+		// 创建内存缓存
+		ctx.Cache = cache.NewMemoryCache(cf.MaxCacheSize)
+		return nil
+
+	case config.CacheTypeNone:
+		// 禁用缓存，不设置Cache（保持为nil）
+		ctx.Cache = nil
+		return nil
+
+	default:
+		return fmt.Errorf("不支持的缓存类型: %s", cf.CacheType)
+	}
 }
 
 // Close 关闭上下文中的所有资源

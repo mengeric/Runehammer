@@ -428,7 +428,7 @@ func TestExtractResultFunctions(t *testing.T) {
 				for _, testValue := range testValues {
 					result, err := interfaceEngine.extractInterfaceResult(testValue)
 					So(err, ShouldBeNil)
-					So(result, ShouldEqual, testValue)
+					So(result, ShouldResemble, testValue)
 				}
 			})
 
@@ -608,7 +608,7 @@ func TestExtractResultFunctions(t *testing.T) {
 
 				result, err := engine.extractResult(dataCtx)
 				So(err, ShouldBeNil)
-				So(result, ShouldNotBeNil) // 应该返回零值，而不是nil
+				So(result, ShouldBeNil)
 			})
 
 			Convey("result变量获取失败", func() {

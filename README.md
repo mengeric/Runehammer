@@ -6,13 +6,19 @@ Runehammer 是一个基于 [Grule](https://github.com/hyperjumptech/grule-rule-e
 
 ## ⚠️ 重要：字段访问规范
 
-**Runehammer 使用严格的字段访问规范，所有规则必须遵循以下命名约定：**
+为保证规则可读性与一致性，请遵循以下命名约定：
 
-- **入参访问**: 必须使用 `Params.字段名`（字段名为大驼峰形式）
-- **返参访问**: 必须使用 `Result.字段名`（字段名为大驼峰形式）
-- **示例**: `Params.User.Age >= 18`，`Result.IsValid = true`
+- 动态引擎(engine.DynamicEngine)
+  - 入参统一注入为 `Params`，规则中以 `Params.字段名` 访问（字段名使用大驼峰）
+  - 返参统一以 `Result.字段名` 读写（字段名使用大驼峰）
+- 数据库引擎(runehammer.New / BaseEngine)
+  - 具名结构体作为入参时，变量名为“类型名的小写”；匿名结构体、基础类型、Map 则统一为 `Params`
+  - 推荐做法：使用匿名结构体或将结构体包一层以统一通过 `Params` 访问
+  - 返参同样以 `Result.字段名` 读写（字段名使用大驼峰）
 
-详细的字段访问规范请参考下方的[变量访问规范](#-变量访问规范)章节。
+示例：`Params.User.Age >= 18`，`Result.IsValid = true`
+
+详细的字段访问规范请参考下方的[变量访问规范](#变量访问规范)章节。
 
 **📖 更多高级用法请参考 [自定义规则使用指南](./docs/CUSTOM_RULES_GUIDE.md)**
 
@@ -91,7 +97,7 @@ import (
     "context"
     "fmt"
     "time"
-    "gitee.com/damengde/runehammer"
+    "gitee.com/damengde/runehammer/engine"
     "gitee.com/damengde/runehammer/rule"
 )
 
@@ -109,9 +115,9 @@ type DynamicResult struct {
 func main() {
     fmt.Println("=== Runehammer 动态引擎示例 ===")
     
-    // 创建动态引擎
-    engine := runehammer.NewDynamicEngine[DynamicResult](
-        runehammer.DynamicEngineConfig{
+    // 创建动态引擎（动态引擎的返回类型建议使用 map[string]interface{}）
+    dynEngine := engine.NewDynamicEngine[map[string]interface{}](
+        engine.DynamicEngineConfig{
             EnableCache:       true,
             CacheTTL:          5 * time.Minute,
             MaxCacheSize:      100,
@@ -131,21 +137,21 @@ func main() {
         },
     }
     
-    result, err := engine.ExecuteRuleDefinition(context.Background(), ageRule, 25)
+    result, err := dynEngine.ExecuteRuleDefinition(context.Background(), ageRule, 25)
     if err != nil {
         fmt.Printf("❌ 执行失败: %v\n", err)
     } else {
         fmt.Printf("✅ 年龄验证结果: %+v\n", result)
-        // 输出: {Adult: true, Message: "符合年龄要求"}
+        // 输出: map[Adult:true Message:符合年龄要求]
     }
     
     // 示例2: 注册自定义函数
     fmt.Println("\n--- 自定义函数示例 ---")
-    engine.RegisterCustomFunction("IsAdult", func(age int) bool {
+    dynEngine.RegisterCustomFunction("IsAdult", func(age int) bool {
         return age >= 18
     })
     
-    engine.RegisterCustomFunction("CalculateDiscount", func(amount, rate float64) float64 {
+    dynEngine.RegisterCustomFunction("CalculateDiscount", func(amount, rate float64) float64 {
         return amount * rate
     })
     
@@ -157,12 +163,12 @@ func main() {
         },
     }
     
-    result, err = engine.ExecuteRuleDefinition(context.Background(), customFuncRule, 25)
+    result, err = dynEngine.ExecuteRuleDefinition(context.Background(), customFuncRule, 25)
     if err != nil {
         fmt.Printf("❌ 执行失败: %v\n", err)
     } else {
         fmt.Printf("✅ 自定义函数结果: %+v\n", result)
-        // 输出: {Adult: true, Discount: 10}
+        // 输出: map[Adult:true Discount:10]
     }
     
     // 示例3: 字符串输入
@@ -175,12 +181,12 @@ func main() {
         },
     }
     
-    result, err = engine.ExecuteRuleDefinition(context.Background(), stringRule, "VIP")
+    result, err = dynEngine.ExecuteRuleDefinition(context.Background(), stringRule, "VIP")
     if err != nil {
         fmt.Printf("❌ 执行失败: %v\n", err)
     } else {
         fmt.Printf("✅ 字符串规则结果: %+v\n", result)
-        // 输出: {IsVip: true, Privilege: "高级权限"}
+        // 输出: map[IsVip:true Privilege:高级权限]
     }
     
     // 示例4: 批量规则执行
@@ -200,7 +206,7 @@ func main() {
         },
     }
     
-    results, err := engine.ExecuteBatch(context.Background(), batchRules, 150)
+    results, err := dynEngine.ExecuteBatch(context.Background(), batchRules, 150)
     if err != nil {
         fmt.Printf("❌ 批量执行失败: %v\n", err)
     } else {
@@ -223,7 +229,7 @@ import (
     "context"
     "fmt"
     "time"
-    "gitee.com/damengde/runehammer"
+    "gitee.com/damengde/runehammer/engine"
     "gitee.com/damengde/runehammer/rule"
 )
 
@@ -254,9 +260,9 @@ type StructResult struct {
 func main() {
     fmt.Println("=== 结构体输入示例 ===")
     
-    // 创建动态引擎
-    engine := runehammer.NewDynamicEngine[StructResult](
-        runehammer.DynamicEngineConfig{
+    // 创建动态引擎（返回 map[string]interface{} 更通用）
+    dynEngine := engine.NewDynamicEngine[map[string]interface{}](
+        engine.DynamicEngineConfig{
             EnableCache: true,
             CacheTTL:    5 * time.Minute,
         },
@@ -284,12 +290,12 @@ func main() {
         },
     }
     
-    result, err := engine.ExecuteRuleDefinition(context.Background(), eligibilityRule, input)
+    result, err := dynEngine.ExecuteRuleDefinition(context.Background(), eligibilityRule, input)
     if err != nil {
         fmt.Printf("❌ 执行失败: %v\n", err)
     } else {
         fmt.Printf("✅ 资格验证结果: %+v\n", result)
-        // 输出: {Eligible: true, Discount: 0.1}
+        // 输出: map[Eligible:true Discount:0.1]
     }
     
     // 指标规则示例
@@ -308,12 +314,12 @@ func main() {
         },
     }
     
-    result, err = engine.ExecuteRuleDefinition(context.Background(), scoreRule, input)
+    result, err = dynEngine.ExecuteRuleDefinition(context.Background(), scoreRule, input)
     if err != nil {
         fmt.Printf("❌ 执行失败: %v\n", err)
     } else {
         fmt.Printf("✅ 评分计算结果: %+v\n", result)
-        // 输出: {CustomerScore: 41} (3 + 8 + 30)
+        // 输出: map[customer_score:41]
     }
 }
 ```
@@ -327,7 +333,7 @@ import (
     "context"
     "fmt"
     "gitee.com/damengde/runehammer"
-    "gitee.com/damengde/runehammer/logger"
+    logger "gitee.com/damengde/runehammer/logger"
 )
 
 func main() {
@@ -337,7 +343,7 @@ func main() {
     baseEngine, err := runehammer.NewBaseEngine(
         runehammer.WithDSN("sqlite:file:example.db?mode=memory&cache=shared&_fk=1"),
         runehammer.WithAutoMigrate(),
-        runehammer.WithLogger(logger.NewNoopLogger()),
+        runehammer.WithCustomLogger(logger.NewNoopLogger()),
     )
     if err != nil {
         fmt.Printf("❌ 创建BaseEngine失败: %v\n", err)
@@ -430,7 +436,7 @@ func main() {
     
     // 创建规则引擎
     engine, err := runehammer.New[DiscountResult](
-        runehammer.WithDB(db),
+        runehammer.WithCustomDB(db),
         runehammer.WithAutoMigrate(),
     )
     if err != nil {
@@ -486,6 +492,8 @@ rule RegularDiscount "普通用户折扣规则" salience 50 {
 
 除了传统的数据库存储规则方式，Runehammer 还提供了动态规则引擎，支持实时生成和执行规则，无需预先存储。这对于指标计算、临时规则、第三方系统集成等场景特别有用。
 
+注意：动态引擎不支持 `map[string]interface{}` 作为输入，请使用结构体/匿名结构体/基础类型；返回类型推荐使用 `map[string]interface{}`，便于灵活扩展返回字段。
+
 ### 核心优势
 
 - **实时执行** - 无需预先存储，规则即时生成即时执行
@@ -500,7 +508,7 @@ package main
 
 import (
     "context"
-    "gitee.com/damengde/runehammer"
+    "gitee.com/damengde/runehammer/engine"
     "gitee.com/damengde/runehammer/rule"
 )
 
@@ -524,9 +532,9 @@ type EligibilityResult struct {
     Discount float64 `json:"discount"`
 }
 
-// 创建动态引擎
-dynamicEngine := runehammer.NewDynamicEngine[EligibilityResult](
-    runehammer.DynamicEngineConfig{
+// 创建动态引擎（返回 map[string]interface{} 更通用）
+dynamicEngine := engine.NewDynamicEngine[map[string]interface{}](
+    engine.DynamicEngineConfig{
         EnableCache:       true,
         CacheTTL:          5 * time.Minute,
         StrictValidation:  true,
@@ -549,8 +557,8 @@ input := CustomerOrder{
 }
 
 result, err := dynamicEngine.ExecuteRuleDefinition(ctx, simpleRule, input)
-// result.Eligible = true
-// result.Discount = 0.1
+// result["Eligible"] = true
+// result["Discount"] = 0.1
 ```
 
 ### 规则类型
@@ -726,28 +734,28 @@ rule := rule.SimpleRule{
 ```go
 engine, err := runehammer.New[YourResultType](
     // 数据库配置
-    runehammer.WithDB(db),                                    // 使用现有数据库连接
+    runehammer.WithCustomDB(db),                                    // 使用现有数据库连接
     runehammer.WithDSN("user:pass@tcp(localhost:3306)/db"),  // 或使用连接字符串
     runehammer.WithAutoMigrate(),                             // 自动创建表结构
-    runehammer.WithTableName("custom_rules"),                // 自定义表名
+    runehammer.                // 自定义表名
     
     // 缓存配置
-    runehammer.WithRedis("localhost:6379", "", 0),           // Redis缓存
-    runehammer.WithCache(customCache),                        // 自定义缓存实现
+    runehammer.WithRedisCache("localhost:6379", "", 0),           // Redis缓存
+    runehammer.WithCustomCache(customCache),                        // 自定义缓存实现
     runehammer.WithCacheTTL(10*time.Minute),                 // 缓存过期时间
     runehammer.WithMaxCacheSize(1000),                       // 内存缓存大小
-    runehammer.WithDisableCache(),                            // 禁用缓存
+    runehammer.WithNoCache(),                            // 禁用缓存
     
     // 其他配置
-    runehammer.WithLogger(logger),                           // 自定义日志器
+    runehammer.WithCustomLogger(logger),                           // 自定义日志器
     runehammer.WithSyncInterval(5*time.Minute),             // 同步间隔
 )
 ```
 
 #### 动态引擎配置
 ```go
-dynamicEngine := runehammer.NewDynamicEngine[ResultType](
-    runehammer.DynamicEngineConfig{
+dynamicEngine := engine.NewDynamicEngine[map[string]interface{}](
+    engine.DynamicEngineConfig{
         // 基础配置
         EnableCache:       true,              // 启用缓存
         CacheTTL:          5 * time.Minute,   // 缓存过期时间
@@ -756,48 +764,6 @@ dynamicEngine := runehammer.NewDynamicEngine[ResultType](
         ParallelExecution: true,              // 支持并行执行
         DefaultTimeout:    30 * time.Second,  // 默认超时时间
     },
-)
-
-// 或使用完整配置选项
-engine, err := runehammer.New[YourResultType](
-    // 动态配置
-    runehammer.WithDynamicConfig(&runehammer.DynamicConfig{
-        // 转换器配置
-        ConverterConfig: rule.ConverterConfig{
-            StrictMode:      false,
-            DefaultPriority: 50,
-            VariablePrefix: map[string]string{
-                "user":     "user",
-                "order":    "order",
-                "customer": "customer",
-            },
-        },
-        
-        // 解析器配置
-        ParserConfig: rule.ParserConfig{
-            DefaultSyntax: rule.SyntaxTypeSQL,
-            SupportedSyntax: []rule.SyntaxType{
-                rule.SyntaxTypeSQL,
-                rule.SyntaxTypeJavaScript,
-            },
-        },
-        
-        // 执行配置
-        ExecutionConfig: runehammer.ExecutionConfig{
-            EnableParallel:   true,
-            MaxConcurrency:   10,
-            ExecutionTimeout: 30 * time.Second,
-            MaxRules:         100,
-        },
-    }),
-    
-    // 快速配置选项
-    runehammer.WithDefaultSyntax(rule.SyntaxTypeSQL),
-    runehammer.WithMaxConcurrency(10),
-    runehammer.WithExecutionTimeout(30 * time.Second),
-    runehammer.WithCustomFunctions(map[string]interface{}{
-        "CustomFunc": func(x int) int { return x * 2 },
-    }),
 )
 ```
 
@@ -1030,15 +996,16 @@ rule TimeExample "时间函数示例" salience 80 {
 
 ## 📋 变量访问规范
 
-Runehammer 规则引擎有严格的字段访问规范，必须遵循以下规则：
+Runehammer 的变量注入在“动态引擎”和“数据库引擎”上略有差异：
 
-### 🔤 字段访问规则
+### 🔤 字段访问规则（推荐统一方式）
 
-| 输入数据类型 | 访问方式 | 规则中访问方式 | 示例 |
-|-------------|----------|---------------|------|
-| **结构体类型** | 使用`Params`前缀 | `Params.字段名`（大驼峰） | `Params.Customer.Age`、`Params.Order.Amount` |
-| **匿名结构体** | 统一使用`Params` | `Params.字段名`（大驼峰） | `Params.Value`、`Params.Data` |
-| **其他类型** | 统一使用`Params` | 直接访问`Params` | `Params > 100`、`Params == "test"` |
+| 输入数据类型 | 动态引擎访问 | 数据库引擎访问 | 示例 |
+|-------------|--------------|----------------|------|
+| 结构体（具名） | `Params.字段名` | `类型名小写.字段名`（或包一层用 Params） | `Params.Customer.Age` 或 `customer.Age` |
+| 匿名结构体 | `Params.字段名` | `Params.字段名` | `Params.Value`、`Params.Data` |
+| 基础类型 | `Params` | `Params` | `Params > 100`、`Params == "test"` |
+| Map | 不支持 | `Params["key"]`（可用） | `Params["customer"]` |
 
 ### 🎯 返回字段访问
 - **默认字段名**: `Result`（大写R开头）
@@ -1142,28 +1109,23 @@ type Engine[T any] interface {
 #### 数据库引擎配置选项
 | 选项 | 说明 | 示例 |
 |------|------|------|
-| `WithDB(db)` | 使用现有GORM数据库连接 | `WithDB(gormDB)` |
+| `WithCustomDB(db)` | 使用现有GORM数据库连接 | `WithCustomDB(gormDB)` |
 | `WithDSN(dsn)` | 使用数据库连接字符串 | `WithDSN("user:pass@tcp(host)/db")` |
 | `WithAutoMigrate()` | 自动创建数据库表 | `WithAutoMigrate()` |
 | `WithTableName(name)` | 自定义规则表名 | `WithTableName("my_rules")` |
-| `WithRedis(addr, pass, db)` | 配置Redis缓存 | `WithRedis("localhost:6379", "", 0)` |
-| `WithCache(cache)` | 使用自定义缓存实现 | `WithCache(myCache)` |
+| `WithRedisCache(addr, pass, db)` | 配置Redis缓存 | `WithRedisCache("localhost:6379", "", 0)` |
+| `WithCustomCache(cache)` | 使用自定义缓存实现 | `WithCustomCache(myCache)` |
 | `WithCacheTTL(ttl)` | 设置缓存过期时间 | `WithCacheTTL(10*time.Minute)` |
-| `WithLogger(logger)` | 设置自定义日志器 | `WithLogger(myLogger)` |
+| `WithCustomLogger(logger)` | 设置自定义日志器 | `WithCustomLogger(myLogger)` |
 
 #### 动态引擎配置选项
-| 选项 | 说明 | 示例 |
-|------|------|------|
-| `WithDynamicConfig(config)` | 设置完整动态配置 | `WithDynamicConfig(dynamicConfig)` |
-| `WithConverterConfig(config)` | 设置转换器配置 | `WithConverterConfig(converterConfig)` |
-| `WithParserConfig(config)` | 设置解析器配置 | `WithParserConfig(parserConfig)` |
-| `WithExecutionConfig(config)` | 设置执行配置 | `WithExecutionConfig(execConfig)` |
-| `WithDefaultSyntax(syntax)` | 设置默认语法类型 | `WithDefaultSyntax(SyntaxTypeSQL)` |
-| `WithSupportedSyntax(syntaxes...)` | 设置支持的语法类型 | `WithSupportedSyntax(SQL, JS)` |
-| `WithCustomOperators(ops)` | 设置自定义操作符 | `WithCustomOperators(operators)` |
-| `WithCustomFunctions(funcs)` | 设置自定义函数 | `WithCustomFunctions(functions)` |
-| `WithMaxConcurrency(max)` | 设置最大并发数 | `WithMaxConcurrency(10)` |
-| `WithExecutionTimeout(timeout)` | 设置执行超时时间 | `WithExecutionTimeout(30*time.Second)` |
+使用 `engine.NewDynamicEngine[T](engine.DynamicEngineConfig{ ... })` 进行配置，主要字段：
+- EnableCache: 是否启用缓存
+- CacheTTL: 缓存过期时间
+- MaxCacheSize: 最大缓存大小
+- StrictValidation: 是否严格验证
+- ParallelExecution: 是否并行执行批量规则
+- DefaultTimeout: 默认超时时间
 
 ### 错误处理
 
@@ -1191,7 +1153,7 @@ if err != nil {
 // 单一缓存策略 - 启动时确定
 engine, _ := runehammer.New[ResultType](
     // 选择Redis缓存
-    runehammer.WithRedis("localhost:6379", "", 0),
+    runehammer.WithRedisCache("localhost:6379", "", 0),
     runehammer.WithCacheTTL(30*time.Minute),        // 30分钟过期
 )
 
@@ -1203,7 +1165,7 @@ engine, _ := runehammer.New[ResultType](
 
 // 或完全禁用缓存
 engine, _ := runehammer.New[ResultType](
-    runehammer.WithDisableCache(),
+    runehammer.WithNoCache(),
 )
 ```
 
@@ -1222,7 +1184,7 @@ func (l *MyLogger) Debugf(ctx context.Context, msg string, keyvals ...any) {
 
 // 使用自定义日志
 engine, _ := runehammer.New[ResultType](
-    runehammer.WithLogger(&MyLogger{logger: zapLogger}),
+    runehammer.WithCustomLogger(&MyLogger{logger: zapLogger}),
 )
 ```
 
@@ -1253,8 +1215,8 @@ rule TimeBasedRule "基于时间的规则" {
 
 ```go
 // 创建动态引擎
-dynamicEngine := runehammer.NewDynamicEngine[CustomResult](
-    runehammer.DynamicEngineConfig{
+dynamicEngine := engine.NewDynamicEngine[map[string]interface{}](
+    engine.DynamicEngineConfig{
         EnableCache: true,
         CacheTTL:    5 * time.Minute,
     },
@@ -1519,8 +1481,8 @@ rule ValidateInput "输入验证" salience 1000 {
 
 ```go
 // 性能优化配置示例
-dynamicEngine := runehammer.NewDynamicEngine[OptimizedResult](
-    runehammer.DynamicEngineConfig{
+dynamicEngine := engine.NewDynamicEngine[map[string]interface{}](
+    engine.DynamicEngineConfig{
         EnableCache:       true,              // 启用缓存
         CacheTTL:          10 * time.Minute,  // 合理的缓存时间
         MaxCacheSize:      500,               // 足够的缓存空间
@@ -1548,12 +1510,12 @@ dynamicEngine := runehammer.NewDynamicEngine[OptimizedResult](
 ```go
 // 初始化两个引擎
 dbEngine, _ := runehammer.New[BusinessResult](
-    runehammer.WithDB(db),
-    runehammer.WithRedis("localhost:6379", "", 0),
+    runehammer.WithCustomDB(db),
+    runehammer.WithRedisCache("localhost:6379", "", 0),
 )
 
-dynamicEngine := runehammer.NewDynamicEngine[MetricResult](
-    runehammer.DynamicEngineConfig{
+dynamicEngine := engine.NewDynamicEngine[map[string]interface{}](
+    engine.DynamicEngineConfig{
         EnableCache:       true,
         ParallelExecution: true,
     },

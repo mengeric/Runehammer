@@ -29,6 +29,7 @@ type DynamicEngine[T any] struct {
 	converter        rule.RuleConverter     // 规则转换器
 	knowledgeLibrary *ast.KnowledgeLibrary  // Grule知识库
 	customFunctions  map[string]interface{} // 自定义函数库
+	customObjects    map[string]interface{} // 自定义对象库（包含方法）
 	validators       []RuleValidator        // 规则验证器
 	logger           logger.Logger          // 日志记录器
 	cache            *DynamicRuleCache      // 规则缓存（可选）
@@ -87,6 +88,7 @@ func NewDynamicEngine[T any](config ...DynamicEngineConfig) *DynamicEngine[T] {
 		converter:        rule.NewGRLConverter(),
 		knowledgeLibrary: ast.NewKnowledgeLibrary(),
 		customFunctions:  make(map[string]interface{}),
+		customObjects:    make(map[string]interface{}),
 		validators:       []RuleValidator{},
 		config:           defaultConfig,
 	}
@@ -202,6 +204,11 @@ func (e *DynamicEngine[T]) RegisterCustomFunctions(functions map[string]interfac
 	}
 }
 
+// RegisterCustomObject 注册自定义对象（包含方法）
+func (e *DynamicEngine[T]) RegisterCustomObject(name string, obj interface{}) {
+	e.customObjects[name] = obj
+}
+
 // RegisterValidator 注册验证器
 func (e *DynamicEngine[T]) RegisterValidator(validator RuleValidator) {
 	e.validators = append(e.validators, validator)
@@ -274,8 +281,11 @@ func (e *DynamicEngine[T]) executeWithKnowledgeBase(
 	// 注入自定义函数
 	e.injectCustomFunctions(dataCtx)
 
+	// 注入自定义对象
+	e.injectCustomObjects(dataCtx)
+
 	// 创建规则引擎
-    ruleEngine := grengine.NewGruleEngine()
+	ruleEngine := grengine.NewGruleEngine()
 
 	// 验证知识库不为空
 	if knowledgeBase == nil {
@@ -458,6 +468,13 @@ func (e *DynamicEngine[T]) injectBuiltinFunctions(dataCtx ast.IDataContext) {
 func (e *DynamicEngine[T]) injectCustomFunctions(dataCtx ast.IDataContext) {
 	for name, fn := range e.customFunctions {
 		dataCtx.Add(name, fn)
+	}
+}
+
+// injectCustomObjects 注入自定义对象
+func (e *DynamicEngine[T]) injectCustomObjects(dataCtx ast.IDataContext) {
+	for name, obj := range e.customObjects {
+		dataCtx.Add(name, obj)
 	}
 }
 

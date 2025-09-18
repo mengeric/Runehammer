@@ -6,7 +6,8 @@ Runehammer规则引擎提供了多种自定义规则的使用方式，支持不�
 
 ## ⚠️ 重要说明
 
-**所有Runehammer引擎都不支持 `map[string]interface{}` 作为输入数据**，因为底层的 grule-rule-engine 不支持 map 类型的解析。请始终使用结构体作为输入数据类型。返回值可以是 `map[string]interface{}` 类型。
+- 动态引擎（engine.DynamicEngine）：不支持 `map[string]interface{}` 作为输入，请使用结构体/匿名结构体/基础类型；返回值建议使用 `map[string]interface{}` 以便灵活扩展。
+- 数据库引擎（runehammer.New/BaseEngine）：支持 `map[string]interface{}` 作为输入（会注入为 `Params`），也支持结构体输入（具名结构体会注入为“类型名小写”变量）。推荐使用结构体以获得更强的约束。
 
 ### 🎯 字段访问规范（重要）
 
@@ -158,10 +159,14 @@ type OrderResult struct {
 func main() {
     // 创建传统引擎实例 - 每种返回类型需要独立实例
     userEngine, err := runehammer.New[ValidationResult](
-        runehammer.WithDSN("mysql://user:pass@localhost:3306/ruledb"),
-        runehammer.WithAutoMigrate(),
-        runehammer.WithLogger(logger.NewConsoleLogger()),
-        runehammer.WithRedisCache("localhost:6379", 0),
+        []runehammer.Option{
+            runehammer.WithDSN("mysql://user:pass@localhost:3306/ruledb"),
+            runehammer.WithAutoMigrate(),
+            runehammer.WithRedis("localhost:6379", "", 0),
+        },
+        []runehammer.ContextOption{
+            runehammer.WithCustomLogger(logger.NewConsoleLogger()),
+        },
     )
     if err != nil {
         log.Fatal("创建用户引擎失败:", err)
@@ -170,9 +175,13 @@ func main() {
     
     // 创建订单引擎实例
     orderEngine, err := runehammer.New[OrderResult](
-        runehammer.WithDSN("mysql://user:pass@localhost:3306/ruledb"),
-        runehammer.WithAutoMigrate(),
-        runehammer.WithLogger(logger.NewConsoleLogger()),
+        []runehammer.Option{
+            runehammer.WithDSN("mysql://user:pass@localhost:3306/ruledb"),
+            runehammer.WithAutoMigrate(),
+        },
+        []runehammer.ContextOption{
+            runehammer.WithCustomLogger(logger.NewConsoleLogger()),
+        },
     )
     if err != nil {
         log.Fatal("创建订单引擎失败:", err)
@@ -238,8 +247,8 @@ func main() {
     baseEngine, err := runehammer.NewBaseEngine(
         runehammer.WithDSN("mysql://user:pass@localhost:3306/ruledb"),
         runehammer.WithAutoMigrate(),
-        runehammer.WithLogger(logger.NewConsoleLogger()),
-        runehammer.WithRedisCache("localhost:6379", 0),
+        runehammer.WithCustomLogger(logger.NewConsoleLogger()),
+        runehammer.WithRedis("localhost:6379", "", 0),
     )
     if err != nil {
         log.Fatal("创建BaseEngine失败:", err)
@@ -861,7 +870,7 @@ type BadExample struct {
 ```go
 // 场景1: 固定业务逻辑，性能要求高
 // 推荐：传统引擎
-userEngine, _ := runehammer.New[UserResult](options...)
+userEngine, _ := runehammer.New[UserResult]([]runehammer.Option{options...}, nil)
 
 // 场景2: 多样化业务需求，资源优化
 // 推荐：通用引擎
@@ -878,11 +887,11 @@ dynamicEngine := engine.NewDynamicEngine[map[string]interface{}](config)
 
 ```go
 // 1. 启用缓存
-runehammer.WithRedisCache("localhost:6379", 0)
+runehammer.WithRedis("localhost:6379", "", 0)
 runehammer.WithMemoryCache(1000, 10*time.Minute)
 
 // 2. 连接池优化
-runehammer.WithDB(dbInstance) // 复用数据库连接
+runehammer.WithCustomDB(dbInstance) // 复用数据库连接
 
 // 3. 批量执行
 results, err := dynamicEngine.ExecuteBatch(ctx, rules, input)

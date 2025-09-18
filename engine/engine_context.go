@@ -16,16 +16,18 @@ import (
 // injectInputData 注入输入数据 - 将各种类型的输入数据注入到执行上下文
 //
 // 变量注入规则:
-//   1. Map类型：将整个map作为"Params"变量注入
-//   2. 结构体类型：作为单个对象注入，使用类型名（小写）作为变量名
-//   3. 匿名结构体和其他类型：统一以"Params"名称注入
+//  1. Map类型：将整个map作为"Params"变量注入
+//  2. 结构体类型：作为单个对象注入，使用类型名（小写）作为变量名
+//  3. 匿名结构体和其他类型：统一以"Params"名称注入
 //
 // 参数:
-//   dataCtx - Grule数据上下文
-//   input   - 输入数据，支持任意类型
+//
+//	dataCtx - Grule数据上下文
+//	input   - 输入数据，支持任意类型
 //
 // 返回值:
-//   error - 注入过程中的错误
+//
+//	error - 注入过程中的错误
 func (e *engineImpl[T]) injectInputData(dataCtx ast.IDataContext, input any) error {
 	// 首先初始化Result变量作为一个空的map
 	result := make(map[string]interface{})
@@ -42,15 +44,15 @@ func (e *engineImpl[T]) injectInputData(dataCtx ast.IDataContext, input any) err
 		t = t.Elem()
 	}
 
-    switch v.Kind() {
-    case reflect.Map:
-        // Map 作为整体注入到 Params，符合 README 约定
-        return e.injectDefaultData(dataCtx, input)
-    case reflect.Struct:
-        return e.injectStructData(dataCtx, input, t)
-    default:
-        return e.injectDefaultData(dataCtx, input)
-    }
+	switch v.Kind() {
+	case reflect.Map:
+		// Map 作为整体注入到 Params，符合 README 约定
+		return e.injectDefaultData(dataCtx, input)
+	case reflect.Struct:
+		return e.injectStructData(dataCtx, input, t)
+	default:
+		return e.injectDefaultData(dataCtx, input)
+	}
 }
 
 // injectStructData 注入结构体数据 - 将整个结构体作为单个对象注入
@@ -60,11 +62,11 @@ func (e *engineImpl[T]) injectStructData(dataCtx ast.IDataContext, input any, t 
 	if inputName == "" {
 		inputName = "Params" // 匿名结构体使用统一的Params名称
 	}
-	
+
 	if err := dataCtx.Add(inputName, input); err != nil {
 		return fmt.Errorf("注入结构体 %s 失败: %w", inputName, err)
 	}
-	
+
 	return nil
 }
 
@@ -79,25 +81,27 @@ func (e *engineImpl[T]) injectDefaultData(dataCtx ast.IDataContext, input any) e
 // extractResult 提取执行结果 - 从执行上下文中提取result变量并转换为目标类型
 //
 // 支持的结果类型转换:
-//   1. interface{}类型：直接返回
-//   2. map类型：从grule上下文提取实际的map值
-//   3. 指针类型：提取实际值后转换
-//   4. 其他类型：通过JSON序列化/反序列化进行类型转换
+//  1. interface{}类型：直接返回
+//  2. map类型：从grule上下文提取实际的map值
+//  3. 指针类型：提取实际值后转换
+//  4. 其他类型：通过JSON序列化/反序列化进行类型转换
 //
 // 参数:
-//   dataCtx - Grule数据上下文
+//
+//	dataCtx - Grule数据上下文
 //
 // 返回值:
-//   T     - 转换后的结果，类型由泛型参数决定
-//   error - 转换过程中的错误
+//
+//	T     - 转换后的结果，类型由泛型参数决定
+//	error - 转换过程中的错误
 func (e *engineImpl[T]) extractResult(dataCtx ast.IDataContext) (T, error) {
 	var zero T
 
-    // 获取Result变量（兼容大小写）
-    resultValue := dataCtx.Get("Result")
-    if resultValue == nil {
-        resultValue = dataCtx.Get("result")
-    }
+	// 获取Result变量（兼容大小写）
+	resultValue := dataCtx.Get("Result")
+	if resultValue == nil {
+		resultValue = dataCtx.Get("result")
+	}
 	if resultValue == nil {
 		// 如果规则没有设置result变量，返回零值
 		return zero, nil
@@ -131,23 +135,27 @@ func (e *engineImpl[T]) extractResult(dataCtx ast.IDataContext) (T, error) {
 // extractInterfaceResult 提取interface{}类型结果
 func (e *engineImpl[T]) extractInterfaceResult(resultValue interface{}) (T, error) {
 	var zero T
-	
-	// interface{}类型直接返回
-	if reflect.TypeOf(zero) == reflect.TypeOf((*any)(nil)).Elem() {
-		return resultValue.(T), nil
+	targetType := reflect.TypeOf(zero)
+
+	// T 为 interface{} 时直接返回（nil 也视为合法）
+	if targetType == nil || targetType == reflect.TypeOf((*any)(nil)).Elem() {
+		if resultValue == nil {
+			return zero, nil
+		}
+		return any(resultValue).(T), nil
 	}
-	
+
 	return zero, fmt.Errorf("不支持的interface类型: %v", reflect.TypeOf(zero))
 }
 
 // extractMapResult 提取map类型结果
 func (e *engineImpl[T]) extractMapResult(resultValue interface{}) (T, error) {
 	var zero T
-	
+
 	if resultMap, ok := resultValue.(map[string]any); ok {
 		return any(resultMap).(T), nil
 	}
-	
+
 	return zero, fmt.Errorf("结果不是有效的map类型")
 }
 
@@ -160,16 +168,16 @@ func (e *engineImpl[T]) extractPointerResult(resultValue interface{}) (T, error)
 func (e *engineImpl[T]) extractGenericResult(resultValue interface{}) (T, error) {
 	var zero T
 	var result T
-	
+
 	// 通过JSON进行类型转换
 	data, err := json.Marshal(resultValue)
 	if err != nil {
 		return zero, fmt.Errorf("序列化结果失败: %w", err)
 	}
-	
+
 	if err := json.Unmarshal(data, &result); err != nil {
 		return zero, fmt.Errorf("反序列化结果失败: %w", err)
 	}
-	
+
 	return result, nil
 }

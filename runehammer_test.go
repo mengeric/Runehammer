@@ -161,8 +161,8 @@ func TestRunehammer(t *testing.T) {
 					// 这个测试需要真实的外部依赖
 					eie, err := New[map[string]interface{}](
 						WithDSN("mysql://user:pass@localhost/test"),
-						WithCache(cache.NewMemoryCache(1000)),
-						WithLogger(logger.NewDefaultLogger()),
+						WithCustomCache(cache.NewMemoryCache(1000)),
+						WithCustomLogger(logger.NewDefaultLogger()),
 						WithAutoMigrate(),
 					)
 					So(err, ShouldBeNil)
@@ -173,7 +173,7 @@ func TestRunehammer(t *testing.T) {
 			})
 
 			Convey("配置验证失败", func() {
-				// 测试无效配置
+				// 测试无效配置 - 空DSN会被配置验证捕获
 				eie, err := New[map[string]interface{}]()
 				So(err, ShouldNotBeNil)
 				So(eie, ShouldBeNil)
@@ -744,7 +744,7 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 				eie, err := New[TestResult](
 					WithDSN("invalid://invalid_db"),
 					WithAutoMigrate(),
-					WithLogger(logger.NewNoopLogger()),
+					WithCustomLogger(logger.NewNoopLogger()),
 				)
 
 				// 应该返回错误
@@ -752,10 +752,11 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 				So(eie, ShouldBeNil)
 
 				// 使用正确的配置重新创建
+				// inline SQLite 配置
 				eie, err = New[TestResult](
-					WithTestSQLite("recovery_test"),
+					WithDSN("sqlite:file:recovery_test.db?mode=memory&cache=shared&_fk=1"),
 					WithAutoMigrate(),
-					WithLogger(logger.NewNoopLogger()),
+					WithCustomLogger(logger.NewNoopLogger()),
 				)
 				So(err, ShouldBeNil)
 				So(eie, ShouldNotBeNil)
@@ -764,9 +765,9 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 
 			Convey("数据库操作错误处理", func() {
 				eie, err := New[TestResult](
-					WithTestSQLite("fault_test"),
+					WithDSN("sqlite:file:fault_test.db?mode=memory&cache=shared&_fk=1"),
 					WithAutoMigrate(),
-					WithLogger(logger.NewNoopLogger()),
+					WithCustomLogger(logger.NewNoopLogger()),
 				)
 				So(err, ShouldBeNil)
 				So(eie, ShouldNotBeNil)
@@ -809,9 +810,9 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 
 			Convey("极端输入数据", func() {
 				eie, err := New[TestResult](
-					WithTestSQLite("extreme_input_test"),
+					WithDSN("sqlite:file:extreme_input_test.db?mode=memory&cache=shared&_fk=1"),
 					WithAutoMigrate(),
-					WithLogger(logger.NewNoopLogger()),
+					WithCustomLogger(logger.NewNoopLogger()),
 				)
 				So(err, ShouldBeNil)
 				So(eie, ShouldNotBeNil)
@@ -850,10 +851,10 @@ func TestErrorRecoveryAndFaultTolerance(t *testing.T) {
 			Convey("系统资源限制", func() {
 				// 测试在资源受限情况下的行为
 				eie, err := New[TestResult](
-					WithTestSQLite("resource_test"),
+					WithDSN("sqlite:file:resource_test.db?mode=memory&cache=shared&_fk=1"),
 					WithAutoMigrate(),
 					WithMaxCacheSize(1), // 极小的缓存
-					WithLogger(logger.NewNoopLogger()),
+					WithCustomLogger(logger.NewNoopLogger()),
 				)
 				So(err, ShouldBeNil)
 				So(eie, ShouldNotBeNil)
@@ -1295,8 +1296,8 @@ func TestRunehammerIntegration(t *testing.T) {
 				eie, err := New[map[string]interface{}](
 					WithDSN("sqlite:file:version_test.db?mode=memory&cache=shared&_fk=1"),
 					WithAutoMigrate(),
-					WithCache(cache.NewMemoryCache(50)),
-					WithLogger(logger.NewNoopLogger()),
+					WithCustomCache(cache.NewMemoryCache(50)),
+					WithCustomLogger(logger.NewNoopLogger()),
 				)
 
 				if err != nil {
@@ -1329,7 +1330,7 @@ func TestRunehammerIntegration(t *testing.T) {
 				eie, err := New[map[string]interface{}](
 					WithDSN("sqlite:file:error_test.db?mode=memory&cache=shared&_fk=1"),
 					WithAutoMigrate(),
-					WithLogger(logger.NewNoopLogger()),
+					WithCustomLogger(logger.NewNoopLogger()),
 				)
 
 				if err != nil {
@@ -1365,7 +1366,7 @@ func TestRunehammerIntegration(t *testing.T) {
 // TestHighLevelAPI 测试高级API接口
 func TestHighLevelAPI(t *testing.T) {
 	Convey("高级API测试", t, func() {
-		
+
 		Convey("TypedEngine执行", func() {
 			// 创建基础引擎
 			baseEngine, err := NewBaseEngine(WithDSN("sqlite:file:api_test.db?mode=memory&cache=shared&_fk=1"))
@@ -1392,7 +1393,7 @@ func TestHighLevelAPI(t *testing.T) {
 
 			// 测试ExecRaw方法
 			result, err := engine.ExecRaw(context.Background(), "test_biz", map[string]any{"test": "value"})
-			So(err, ShouldNotBeNil) // 应该返回规则未找到错误
+			So(err, ShouldNotBeNil)    // 应该返回规则未找到错误
 			So(result, ShouldNotBeNil) // ExecRaw返回空map而不是nil
 		})
 

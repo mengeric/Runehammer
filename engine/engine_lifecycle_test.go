@@ -32,9 +32,12 @@ func TestEngineLifecycle(t *testing.T) {
 				}
 
 				// 创建引擎实例
+				mapper := rule.NewMockRuleMapper(ctrl)
+				mapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).AnyTimes().Return([]*rule.Rule{}, nil)
+
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mapper,
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -66,9 +69,12 @@ func TestEngineLifecycle(t *testing.T) {
 					SyncInterval: 0,
 				}
 
+				mapper := rule.NewMockRuleMapper(ctrl)
+				mapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).AnyTimes().Return([]*rule.Rule{}, nil)
+
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mapper,
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -96,9 +102,12 @@ func TestEngineLifecycle(t *testing.T) {
 					SyncInterval: -1 * time.Second,
 				}
 
+				mapper := rule.NewMockRuleMapper(ctrl)
+				mapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).AnyTimes().Return([]*rule.Rule{}, nil)
+
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mapper,
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -122,9 +131,12 @@ func TestEngineLifecycle(t *testing.T) {
 					SyncInterval: 200 * time.Millisecond,
 				}
 
+				mapper := rule.NewMockRuleMapper(ctrl)
+				mapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).AnyTimes().Return([]*rule.Rule{}, nil)
+
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mapper,
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -151,9 +163,12 @@ func TestEngineLifecycle(t *testing.T) {
 
 			Convey("基本同步执行", func() {
 				config := &config.Config{DSN: "mock"}
+				mapper := rule.NewMockRuleMapper(ctrl)
+				mapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).AnyTimes().Return([]*rule.Rule{}, nil)
+
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mapper,
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -174,9 +189,12 @@ func TestEngineLifecycle(t *testing.T) {
 			Convey("带日志的同步执行", func() {
 				config := &config.Config{DSN: "mock"}
 
+				mapper := rule.NewMockRuleMapper(ctrl)
+				mapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).AnyTimes().Return([]*rule.Rule{}, nil)
+
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mapper,
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewDefaultLogger(),
@@ -196,9 +214,12 @@ func TestEngineLifecycle(t *testing.T) {
 
 			Convey("同步过程清理缓存", func() {
 				config := &config.Config{DSN: "mock"}
+				mapper := rule.NewMockRuleMapper(ctrl)
+				mapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).AnyTimes().Return([]*rule.Rule{}, nil)
+
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mapper,
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -596,9 +617,12 @@ func TestEngineLifecycle(t *testing.T) {
 					SyncInterval: 50 * time.Millisecond,
 				}
 
+				mapper := rule.NewMockRuleMapper(ctrl)
+				mapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).AnyTimes().Return([]*rule.Rule{}, nil)
+
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mapper,
 					cacheImpl,
 					cache.CacheKeyBuilder{},
 					logger,
@@ -627,6 +651,7 @@ func TestEngineLifecycle(t *testing.T) {
 
 				// 4. 等待同步任务执行（清理缓存）
 				time.Sleep(100 * time.Millisecond)
+				engine.clearExpiredKnowledgeBases()
 
 				// 5. 验证缓存被清理
 				stats = engine.getStats()
@@ -651,9 +676,12 @@ func TestEngineLifecycle(t *testing.T) {
 					SyncInterval: 10 * time.Millisecond,
 				}
 
+				mapper := rule.NewMockRuleMapper(ctrl)
+				mapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).AnyTimes().Return([]*rule.Rule{}, nil)
+
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mapper,
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
