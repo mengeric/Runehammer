@@ -122,7 +122,7 @@ func TestGRLConverter(t *testing.T) {
 				So(grl, ShouldContainSubstring, "when")
 				So(grl, ShouldContainSubstring, "then")
 				So(grl, ShouldContainSubstring, "\"age\" > 18")
-				So(grl, ShouldContainSubstring, "result[\"approved\"]")
+                So(grl, ShouldContainSubstring, "Result[\"approved\"]")
 			})
 
 			Convey("转换StandardRule指针", func() {
@@ -230,7 +230,7 @@ func TestGRLConverter(t *testing.T) {
 				So(grl, ShouldContainSubstring, "基本测试规则")
 				So(grl, ShouldContainSubstring, "salience 70")
 				So(grl, ShouldContainSubstring, "\"amount\" > 1000")
-				So(grl, ShouldContainSubstring, "result[\"risk\"] = \"high\"")
+                So(grl, ShouldContainSubstring, "Result[\"risk\"] = \"high\"")
 				So(grl, ShouldContainSubstring, "Retract(\"BASIC_001\")")
 			})
 
@@ -326,8 +326,8 @@ func TestGRLConverter(t *testing.T) {
 
 				grl, err := converter.ConvertRule(rule, Definitions{})
 				So(err, ShouldBeNil)
-				So(grl, ShouldContainSubstring, "result[\"status\"] = \"processed\"")
-				So(grl, ShouldContainSubstring, "result[\"timestamp\"] = \"now()\"")
+                So(grl, ShouldContainSubstring, "Result[\"status\"] = \"processed\"")
+                So(grl, ShouldContainSubstring, "Result[\"timestamp\"] = \"now()\"")
 				// 验证有多行动作
 				actionLines := strings.Count(grl, ";")
 				So(actionLines, ShouldBeGreaterThanOrEqualTo, 3) // 至少3个动作（包括Retract）

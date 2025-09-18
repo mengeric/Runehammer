@@ -1361,3 +1361,57 @@ func TestRunehammerIntegration(t *testing.T) {
 		})
 	})
 }
+
+// TestHighLevelAPI 测试高级API接口
+func TestHighLevelAPI(t *testing.T) {
+	Convey("高级API测试", t, func() {
+		
+		Convey("TypedEngine执行", func() {
+			// 创建基础引擎
+			baseEngine, err := NewBaseEngine(WithDSN("sqlite:file:api_test.db?mode=memory&cache=shared&_fk=1"))
+			So(err, ShouldBeNil)
+			So(baseEngine, ShouldNotBeNil)
+			defer baseEngine.Close()
+
+			// 创建类型化引擎
+			typedEngine := NewTypedEngine[map[string]interface{}](baseEngine)
+			So(typedEngine, ShouldNotBeNil)
+			defer typedEngine.Close()
+
+			// 执行规则（即使没有规则，也会测试函数调用路径）
+			result, err := typedEngine.Exec(context.Background(), "test_biz", map[string]any{"test": "value"})
+			So(err, ShouldNotBeNil) // 应该返回规则未找到错误
+			So(result, ShouldBeNil)
+		})
+
+		Convey("NewBaseEngine工厂方法", func() {
+			engine, err := NewBaseEngine(WithDSN("sqlite:file:base_test.db?mode=memory&cache=shared&_fk=1"))
+			So(err, ShouldBeNil)
+			So(engine, ShouldNotBeNil)
+			defer engine.Close()
+
+			// 测试ExecRaw方法
+			result, err := engine.ExecRaw(context.Background(), "test_biz", map[string]any{"test": "value"})
+			So(err, ShouldNotBeNil) // 应该返回规则未找到错误
+			So(result, ShouldNotBeNil) // ExecRaw返回空map而不是nil
+		})
+
+		Convey("类型转换函数", func() {
+			// 创建测试数据
+			inputMap := map[string]interface{}{
+				"name": "test",
+				"age":  25,
+			}
+
+			// 测试map到map的转换
+			result, err := convertToType[map[string]interface{}](inputMap)
+			So(err, ShouldBeNil)
+			So(result, ShouldResemble, inputMap)
+
+			// 测试空输入
+			emptyResult, err := convertToType[map[string]interface{}](nil)
+			So(err, ShouldBeNil)
+			So(emptyResult, ShouldBeNil)
+		})
+	})
+}

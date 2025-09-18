@@ -21,14 +21,14 @@ func TestRuleConverterCoverage(t *testing.T) {
 							BizCode: "test",
 							Name:    "启用规则",
 							Enabled: true,
-							GRL:     "rule EnabledRule \"启用的规则\" { when true then result[\"test\"] = true; }",
+						GRL:     "rule EnabledRule \"启用的规则\" { when true then Result[\"test\"] = true; }",
 						},
 						{
 							ID:      2,
 							BizCode: "test",
 							Name:    "禁用规则",
 							Enabled: false,
-							GRL:     "rule DisabledRule \"禁用的规则\" { when true then result[\"test\"] = false; }",
+						GRL:     "rule DisabledRule \"禁用的规则\" { when true then Result[\"test\"] = false; }",
 						},
 					},
 				}
@@ -280,7 +280,7 @@ func TestRuleConverterCoverage(t *testing.T) {
 
 				grl, err := converter.ConvertRule(rule, Definitions{})
 				So(err, ShouldBeNil)
-				So(grl, ShouldContainSubstring, "result[\"total\"] = amount * 1.2")
+                So(grl, ShouldContainSubstring, "Result[\"total\"] = amount * 1.2")
 			})
 
 			Convey("invoke 动作类型带参数", func() {
@@ -517,11 +517,11 @@ func TestRuleConverterCoverage(t *testing.T) {
 
 			Convey("resolveTarget 函数测试", func() {
 				// result 字段
-				result := converter.resolveTarget("result.score")
-				So(result, ShouldEqual, "result[\"score\"]")
+                result := converter.resolveTarget("result.score")
+                So(result, ShouldEqual, "Result[\"score\"]")
 
-				result = converter.resolveTarget("result.nested.field")
-				So(result, ShouldEqual, "result[\"nested.field\"]")
+                result = converter.resolveTarget("result.nested.field")
+                So(result, ShouldEqual, "Result[\"nested.field\"]")
 
 				// 非 result 字段
 				result = converter.resolveTarget("other.field")

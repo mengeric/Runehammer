@@ -274,12 +274,6 @@ func (e *DynamicEngine[T]) executeWithKnowledgeBase(
 	// 注入自定义函数
 	e.injectCustomFunctions(dataCtx)
 
-	// 创建结果容器，规则会向其中写入结果
-	resultMap := make(map[string]interface{})
-	if err := dataCtx.Add("Result", resultMap); err != nil {
-		return zero, fmt.Errorf("创建结果容器失败: %w", err)
-	}
-
 	// 创建规则引擎
     ruleEngine := grengine.NewGruleEngine()
 

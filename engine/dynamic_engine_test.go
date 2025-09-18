@@ -62,7 +62,7 @@ func TestDynamicEngine(t *testing.T) {
 		Convey("执行简单规则", func() {
 			// 定义简单规则 - 使用结构体字段访问
 			simpleRule := rule.SimpleRule{
-				When: "testinput.Customer.Age >= 18",
+				When: "Params.Customer.Age >= 18",
 				Then: map[string]string{
 					"Result.Eligible": "true",
 					"Result.Message":  "\"符合条件\"",
@@ -93,12 +93,12 @@ func TestDynamicEngine(t *testing.T) {
 				Description: "客户评分计算",
 				Formula:     "age_score + income_score",
 				Variables: map[string]string{
-					"age_score":    "testinput.Customer.Age * 0.1",
-					"income_score": "testinput.Customer.Income * 0.0001",
+					"age_score":    "Params.Customer.Age * 0.1",
+					"income_score": "Params.Customer.Income * 0.0001",
 				},
 				Conditions: []string{
-					"testinput.Customer.Age >= 18",
-					"testinput.Customer.Income > 0",
+					"Params.Customer.Age >= 18",
+					"Params.Customer.Income > 0",
 				},
 			}
 
@@ -125,7 +125,7 @@ func TestDynamicEngine(t *testing.T) {
 				Tags:        []string{"vip", "customer"},
 				Conditions: rule.Condition{
 					Type:     "simple",
-					Left:     "testinput.Customer.VipLevel",
+					Left:     "Params.Customer.VipLevel",
 					Operator: ">=",
 					Right:    3,
 				},
@@ -158,7 +158,7 @@ func TestDynamicEngine(t *testing.T) {
 		Convey("批量执行规则", func() {
 			rules := []interface{}{
 				rule.SimpleRule{
-					When: "testinput.Order.Amount > 500",
+					When: "Params.Order.Amount > 500",
 					Then: map[string]string{
 						"Result.FreeShipping": "true",
 					},
@@ -167,7 +167,7 @@ func TestDynamicEngine(t *testing.T) {
 					Name:    "loyalty_score",
 					Formula: "purchase_count * 10",
 					Variables: map[string]string{
-						"purchase_count": "testinput.Customer.PurchaseCount",
+						"purchase_count": "Params.Customer.PurchaseCount",
 					},
 				},
 			}
@@ -202,9 +202,9 @@ func TestDynamicEngine(t *testing.T) {
 
 			// 使用自定义函数的规则
 			rule := rule.SimpleRule{
-				When: "ValidateAge(testinput.Customer.Age)",
+				When: "ValidateAge(Params.Customer.Age)",
 				Then: map[string]string{
-					"Result.Discount": "CalculateDiscount(testinput.Order.Amount, 0.1)",
+					"Result.Discount": "CalculateDiscount(Params.Order.Amount, 0.1)",
 				},
 			}
 
@@ -271,7 +271,7 @@ func TestDynamicEngine(t *testing.T) {
 			Convey("超时执行", func() {
 				// 创建一个会超时的规则
 				timeoutRule := rule.SimpleRule{
-					When: "testinput.Customer.Age >= 0", // 简单条件
+					When: "Params.Customer.Age >= 0", // 简单条件
 					Then: map[string]string{
 						"Result.Processed": "true",
 					},
@@ -312,7 +312,7 @@ func TestDynamicEngine(t *testing.T) {
 			Convey("缓存管理", func() {
 				// 先执行一个规则来填充缓存
 				rule := rule.SimpleRule{
-					When: "testinput.Customer.Age >= 18",
+					When: "Params.Customer.Age >= 18",
 					Then: map[string]string{"Result.Cached": "true"},
 				}
 				input := TestInput{Customer: TestCustomer{Age: 25}}
@@ -346,11 +346,11 @@ func TestDynamicEngine(t *testing.T) {
 
 				rules := []interface{}{
 					rule.SimpleRule{
-						When: "testinput.Customer.Age >= 18",
+						When: "Params.Customer.Age >= 18",
 						Then: map[string]string{"Result.Adult": "true"},
 					},
 					rule.SimpleRule{
-						When: "testinput.Order.Amount > 100",
+						When: "Params.Order.Amount > 100",
 						Then: map[string]string{"Result.HighValue": "true"},
 					},
 				}

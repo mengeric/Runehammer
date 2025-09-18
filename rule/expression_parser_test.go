@@ -95,9 +95,9 @@ func TestExpressionParser(t *testing.T) {
 			parser := NewExpressionParser()
 
 			Convey("基本赋值", func() {
-				result, err := parser.ParseAction("result.score", "Sum([80, 90, 75])")
-				So(err, ShouldBeNil)
-				So(result, ShouldEqual, "result[\"score\"] = Sum([80, 90, 75])")
+                result, err := parser.ParseAction("result.score", "Sum([80, 90, 75])")
+                So(err, ShouldBeNil)
+                So(result, ShouldEqual, "Result[\"score\"] = Sum([80, 90, 75])")
 			})
 
 			Convey("空目标测试", func() {

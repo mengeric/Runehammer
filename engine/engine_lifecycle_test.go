@@ -314,9 +314,10 @@ func TestEngineLifecycle(t *testing.T) {
 			Convey("正常刷新缓存", func() {
 				config := &config.Config{DSN: "mock"}
 				cacheImpl := cache.NewMemoryCache(1000)
+				mockMapper := rule.NewMockRuleMapper(ctrl)
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mockMapper,
 					cacheImpl,
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -335,10 +336,21 @@ func TestEngineLifecycle(t *testing.T) {
 				_, exists := engine.knowledgeBases.Load(bizCode)
 				So(exists, ShouldBeTrue)
 
+				// 设置mock期望 - refreshCache会调用getRules
+				rules := []*rule.Rule{
+					{
+						ID:      1,
+						BizCode: bizCode,
+						Name:    "测试规则",
+						GRL:     `rule TestRule "测试" { when true then Result["test"] = true; Retract("TestRule"); }`,
+						Enabled: true,
+					},
+				}
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), bizCode).Return(rules, nil)
+
 				// 刷新缓存
-				_ = engine.refreshCache(bizCode)
-				// 由于没有真实的数据库，getRules可能会失败，但清理逻辑应该执行
-				// 这里主要验证不会panic
+				err := engine.refreshCache(bizCode)
+				So(err, ShouldBeNil)
 
 				// 验证编译缓存被清理
 				_, exists = engine.knowledgeBases.Load(bizCode)
@@ -351,10 +363,11 @@ func TestEngineLifecycle(t *testing.T) {
 			Convey("带缓存组件的刷新", func() {
 				cacheImpl := cache.NewMemoryCache(1000)
 				config := &config.Config{DSN: "mock"}
+				mockMapper := rule.NewMockRuleMapper(ctrl)
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mockMapper,
 					cacheImpl,
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -366,6 +379,18 @@ func TestEngineLifecycle(t *testing.T) {
 				So(engine, ShouldNotBeNil)
 
 				bizCode := "test_biz_with_cache"
+
+				// 设置mock期望
+				rules := []*rule.Rule{
+					{
+						ID:      1,
+						BizCode: bizCode,
+						Name:    "缓存测试规则",
+						GRL:     `rule CacheTestRule "缓存测试" { when true then Result["test"] = true; Retract("CacheTestRule"); }`,
+						Enabled: true,
+					},
+				}
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), bizCode).Return(rules, nil)
 
 				// 设置缓存数据
 				ctx := context.Background()
@@ -386,10 +411,11 @@ func TestEngineLifecycle(t *testing.T) {
 
 			Convey("带日志的刷新", func() {
 				config := &config.Config{DSN: "mock"}
+				mockMapper := rule.NewMockRuleMapper(ctrl)
 
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mockMapper,
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewDefaultLogger(),
@@ -399,6 +425,9 @@ func TestEngineLifecycle(t *testing.T) {
 					false,
 				)
 				So(engine, ShouldNotBeNil)
+
+				// 设置mock期望
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), "test_biz_with_log").Return([]*rule.Rule{}, nil)
 
 				// 刷新操作应该记录日志并且不panic
 				So(func() {
@@ -410,9 +439,10 @@ func TestEngineLifecycle(t *testing.T) {
 
 			Convey("空业务码刷新", func() {
 				config := &config.Config{DSN: "mock"}
+				mockMapper := rule.NewMockRuleMapper(ctrl)
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mockMapper,
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -422,6 +452,9 @@ func TestEngineLifecycle(t *testing.T) {
 					false,
 				)
 				So(engine, ShouldNotBeNil)
+
+				// 设置mock期望 - 空业务码也会调用FindByBizCode
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), "").Return([]*rule.Rule{}, nil)
 
 				// 空业务码应该不会panic
 				So(func() {
@@ -939,9 +972,10 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 
 			Convey("特殊业务码", func() {
 				config := &config.Config{DSN: "mock"}
+				mockMapper := rule.NewMockRuleMapper(ctrl)
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mockMapper,
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -963,6 +997,9 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 					"very_long_business_code_that_exceeds_normal_length_expectations_and_might_cause_issues",
 				}
 
+				// 设置mock期望 - 对于所有特殊业务码返回空规则
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
+
 				for _, code := range specialCodes {
 					So(func() {
 						engine.refreshCache(code)
@@ -977,9 +1014,10 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 
 			Convey("高并发缓存操作", func() {
 				config := &config.Config{DSN: "mock"}
+				mockMapper := rule.NewMockRuleMapper(ctrl)
 				engine := NewEngineImpl[map[string]interface{}](
 					config,
-					rule.NewMockRuleMapper(ctrl),
+					mockMapper,
 					cache.NewMemoryCache(1000),
 					cache.CacheKeyBuilder{},
 					logger.NewNoopLogger(),
@@ -989,6 +1027,9 @@ func TestEngineLifecycleEdgeCases(t *testing.T) {
 					false,
 				)
 				So(engine, ShouldNotBeNil)
+
+				// 设置mock期望 - 并发调用refreshCache会触发大量FindByBizCode调用
+				mockMapper.EXPECT().FindByBizCode(gomock.Any(), gomock.Any()).Return([]*rule.Rule{}, nil).AnyTimes()
 
 				// 启动大量并发goroutine
 				concurrency := 100

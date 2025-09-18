@@ -73,7 +73,7 @@ func (p *DefaultExpressionParser) ParseCondition(expr string) (string, error) {
 	case SyntaxTypeJavaScript:
 		return p.parseJSCondition(expr)
 	default:
-		return p.parseSQLCondition(expr)
+		return "", fmt.Errorf("不支持的语法类型: %s", p.syntax)
 	}
 }
 
@@ -178,6 +178,11 @@ func (p *DefaultExpressionParser) parseSQLCondition(expr string) (string, error)
 		return fmt.Sprintf("Contains([%s], %s)", strings.Join(cleanValues, ", "), field)
 	})
 
+	// 基本语法验证
+	if err := p.validateSQLSyntax(result); err != nil {
+		return "", err
+	}
+
 	return result, nil
 }
 
@@ -235,13 +240,13 @@ func (p *DefaultExpressionParser) parseTernaryOperator(expr string) string {
 
 // resolveTarget 解析目标字段
 func (p *DefaultExpressionParser) resolveTarget(target string) string {
-	// 处理结果字段
-	if strings.HasPrefix(target, "Result.") {
-		field := strings.TrimPrefix(target, "Result.")
-		return fmt.Sprintf("Result[\"%s\"]", field)
-	}
+    // 处理结果字段
+    if strings.HasPrefix(target, "Result.") || strings.HasPrefix(target, "result.") {
+        field := strings.TrimPrefix(strings.TrimPrefix(target, "Result."), "result.")
+        return fmt.Sprintf("Result[\"%s\"]", field)
+    }
 
-	return target
+    return target
 }
 
 // parseNumber 解析数字
@@ -292,4 +297,32 @@ func (p *DefaultExpressionParser) isBooleanLiteral(s string) bool {
 // normalizeBooleanLiteral 标准化布尔字面量
 func (p *DefaultExpressionParser) normalizeBooleanLiteral(s string) string {
 	return s
+}
+
+// validateSQLSyntax 验证SQL表达式语法
+func (p *DefaultExpressionParser) validateSQLSyntax(expr string) error {
+	expr = strings.TrimSpace(expr)
+	
+	// 检查空表达式
+	if expr == "" {
+		return fmt.Errorf("表达式不能为空")
+	}
+	
+	// 检查是否以操作符开始
+	invalidStarts := []string{"&&", "||", ">=", "<=", "==", "!=", ">", "<", "AND", "OR"}
+	for _, start := range invalidStarts {
+		if strings.HasPrefix(expr, start) {
+			return fmt.Errorf("表达式不能以操作符开始: %s", start)
+		}
+	}
+	
+	// 检查是否以操作符结束
+	invalidEnds := []string{"&&", "||", ">=", "<=", "==", "!=", ">", "<", "AND", "OR"}
+	for _, end := range invalidEnds {
+		if strings.HasSuffix(expr, " "+end) || strings.HasSuffix(expr, end+" ") {
+			return fmt.Errorf("表达式不能以操作符结束: %s", end)
+		}
+	}
+	
+	return nil
 }

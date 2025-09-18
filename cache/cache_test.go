@@ -104,3 +104,20 @@ func TestRuleCacheItem(t *testing.T) {
 		})
 	})
 }
+
+// TestCacheKeyBuilder 测试缓存键构建器
+func TestCacheKeyBuilder(t *testing.T) {
+	Convey("缓存键构建器测试", t, func() {
+		builder := CacheKeyBuilder{}
+
+		Convey("规则键构建", func() {
+			key := builder.RuleKey("test_biz")
+			So(key, ShouldEqual, "runehammer:rule:test_biz")
+		})
+
+		Convey("元数据键构建", func() {
+			key := builder.MetaKey("test_meta")
+			So(key, ShouldEqual, "runehammer:meta:test_meta")
+		})
+	})
+}

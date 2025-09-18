@@ -14,7 +14,7 @@ Runehammer 是一个基于 [Grule](https://github.com/hyperjumptech/grule-rule-e
 
 详细的字段访问规范请参考下方的[变量访问规范](#-变量访问规范)章节。
 
-**📖 更多高级用法请参考 [自定义规则使用指南](./CUSTOM_RULES_GUIDE.md)**
+**📖 更多高级用法请参考 [自定义规则使用指南](./docs/CUSTOM_RULES_GUIDE.md)**
 
 ## ✨ 核心特性
 
@@ -68,7 +68,7 @@ Runehammer 是一个基于 [Grule](https://github.com/hyperjumptech/grule-rule-e
 | 文档 | 说明 | 适用场景 |
 |------|------|----------|
 | [README.md](./README.md) | 项目概述、快速开始、基础用法 | 初次了解、快速上手 |
-| [自定义规则使用指南](./CUSTOM_RULES_GUIDE.md) | 详细的规则定义、字段访问、高级特性 | 深度使用、规则设计 |
+| [自定义规则使用指南](./docs/CUSTOM_RULES_GUIDE.md) | 详细的规则定义、字段访问、高级特性 | 深度使用、规则设计 |
 
 ## 🚀 快速开始
 
@@ -92,13 +92,25 @@ import (
     "fmt"
     "time"
     "gitee.com/damengde/runehammer"
+    "gitee.com/damengde/runehammer/rule"
 )
+
+// 定义结果类型
+type DynamicResult struct {
+    Adult       bool   `json:"adult"`
+    Message     string `json:"message"`
+    Discount    int    `json:"discount"`
+    IsVip       bool   `json:"is_vip"`
+    Privilege   string `json:"privilege"`
+    LargeAmount bool   `json:"large_amount"`
+    SmallAmount bool   `json:"small_amount"`
+}
 
 func main() {
     fmt.Println("=== Runehammer 动态引擎示例 ===")
     
     // 创建动态引擎
-    engine := runehammer.NewDynamicEngine[map[string]interface{}](
+    engine := runehammer.NewDynamicEngine[DynamicResult](
         runehammer.DynamicEngineConfig{
             EnableCache:       true,
             CacheTTL:          5 * time.Minute,
@@ -111,7 +123,7 @@ func main() {
     
     // 示例1: 基本类型输入 - 年龄验证
     fmt.Println("\n--- 年龄验证规则 ---")
-    ageRule := runehammer.SimpleRule{
+    ageRule := rule.SimpleRule{
         When: "Params >= 18", // 基本类型使用 Params 直接访问
         Then: map[string]string{
             "Result.Adult":   "true",
@@ -137,7 +149,7 @@ func main() {
         return amount * rate
     })
     
-    customFuncRule := runehammer.SimpleRule{
+    customFuncRule := rule.SimpleRule{
         When: "IsAdult(Params)",
         Then: map[string]string{
             "Result.Adult":    "true",
@@ -155,7 +167,7 @@ func main() {
     
     // 示例3: 字符串输入
     fmt.Println("\n--- 字符串规则示例 ---")
-    stringRule := runehammer.SimpleRule{
+    stringRule := rule.SimpleRule{
         When: "Params == \"VIP\"",
         Then: map[string]string{
             "Result.IsVip":    "true",
@@ -174,13 +186,13 @@ func main() {
     // 示例4: 批量规则执行
     fmt.Println("\n--- 批量规则执行示例 ---")
     batchRules := []interface{}{
-        runehammer.SimpleRule{
+        rule.SimpleRule{
             When: "Params > 100",
             Then: map[string]string{
                 "Result.LargeAmount": "true",
             },
         },
-        runehammer.SimpleRule{
+        rule.SimpleRule{
             When: "Params <= 100",
             Then: map[string]string{
                 "Result.SmallAmount": "true",
@@ -212,6 +224,7 @@ import (
     "fmt"
     "time"
     "gitee.com/damengde/runehammer"
+    "gitee.com/damengde/runehammer/rule"
 )
 
 // 定义业务数据结构
@@ -231,11 +244,18 @@ type Order struct {
     Quantity int     `json:"quantity"`
 }
 
+// 定义结果类型
+type StructResult struct {
+    Eligible        bool    `json:"eligible"`
+    Discount        float64 `json:"discount"`
+    CustomerScore   float64 `json:"customer_score"`
+}
+
 func main() {
     fmt.Println("=== 结构体输入示例 ===")
     
     // 创建动态引擎
-    engine := runehammer.NewDynamicEngine[map[string]interface{}](
+    engine := runehammer.NewDynamicEngine[StructResult](
         runehammer.DynamicEngineConfig{
             EnableCache: true,
             CacheTTL:    5 * time.Minute,
@@ -256,7 +276,7 @@ func main() {
     }
     
     // 简单规则示例
-    eligibilityRule := runehammer.SimpleRule{
+    eligibilityRule := rule.SimpleRule{
         When: "Params.Customer.Age >= 18 && Params.Order.Amount > 1000",
         Then: map[string]string{
             "Result.Eligible": "true",
@@ -273,7 +293,7 @@ func main() {
     }
     
     // 指标规则示例
-    scoreRule := runehammer.MetricRule{
+    scoreRule := rule.MetricRule{
         Name:        "customer_score",
         Description: "客户综合评分",
         Formula:     "age_score + income_score + vip_score",
@@ -307,6 +327,7 @@ import (
     "context"
     "fmt"
     "gitee.com/damengde/runehammer"
+    "gitee.com/damengde/runehammer/logger"
 )
 
 func main() {
@@ -316,7 +337,7 @@ func main() {
     baseEngine, err := runehammer.NewBaseEngine(
         runehammer.WithDSN("sqlite:file:example.db?mode=memory&cache=shared&_fk=1"),
         runehammer.WithAutoMigrate(),
-        runehammer.WithLogger(runehammer.NewNoopLogger()),
+        runehammer.WithLogger(logger.NewNoopLogger()),
     )
     if err != nil {
         fmt.Printf("❌ 创建BaseEngine失败: %v\n", err)
@@ -475,6 +496,14 @@ rule RegularDiscount "普通用户折扣规则" salience 50 {
 ### 基本用法
 
 ```go
+package main
+
+import (
+    "context"
+    "gitee.com/damengde/runehammer"
+    "gitee.com/damengde/runehammer/rule"
+)
+
 // 定义输入数据结构
 type CustomerOrder struct {
     Customer Customer `json:"customer"`
@@ -506,7 +535,7 @@ dynamicEngine := runehammer.NewDynamicEngine[EligibilityResult](
 )
 
 // 执行简单规则
-simpleRule := runehammer.SimpleRule{
+simpleRule := rule.SimpleRule{
     When: "Params.Customer.Age >= 18 && Params.Order.Amount > 100",
     Then: map[string]string{
         "Result.Eligible": "true",
@@ -530,7 +559,9 @@ result, err := dynamicEngine.ExecuteRuleDefinition(ctx, simpleRule, input)
 适用于快速定义简单的条件-结果规则：
 
 ```go
-rule := runehammer.SimpleRule{
+import "gitee.com/damengde/runehammer/rule"
+
+rule := rule.SimpleRule{
     When: "Params.User.VIP == true && Params.Order.Amount > 500",
     Then: map[string]string{
         "Result.Priority":     "\"high\"",
@@ -543,7 +574,9 @@ rule := runehammer.SimpleRule{
 专门用于指标计算和数据分析：
 
 ```go
-metricRule := runehammer.MetricRule{
+import "gitee.com/damengde/runehammer/rule"
+
+metricRule := rule.MetricRule{
     Name:        "customer_score",
     Description: "客户评分计算",
     Formula:     "age_score + income_score + credit_score",
@@ -566,17 +599,19 @@ result, err := dynamicEngine.ExecuteRuleDefinition(ctx, metricRule, input)
 完整的规则定义格式，支持复杂条件和多种动作：
 
 ```go
-standardRule := runehammer.StandardRule{
+import "gitee.com/damengde/runehammer/rule"
+
+standardRule := rule.StandardRule{
     ID:          "loan_approval",
     Name:        "贷款审批规则",
     Description: "根据客户信息进行贷款审批",
     Priority:    100,
     Enabled:     true,
     Tags:        []string{"loan", "approval"},
-    Conditions: runehammer.Condition{
+    Conditions: rule.Condition{
         Type:     "composite",
         Operator: "and",
-        Children: []runehammer.Condition{
+        Children: []rule.Condition{
             {
                 Type:     "simple",
                 Left:     "Params.Customer.Age",
@@ -591,7 +626,7 @@ standardRule := runehammer.StandardRule{
             },
         },
     },
-    Actions: []runehammer.Action{
+    Actions: []rule.Action{
         {
             Type:   "assign",
             Target: "Result.Approved",
@@ -612,14 +647,18 @@ standardRule := runehammer.StandardRule{
 
 #### SQL-like 语法
 ```go
-parser := runehammer.NewExpressionParser(runehammer.SyntaxTypeSQL)
+import "gitee.com/damengde/runehammer/rule"
+
+parser := rule.NewExpressionParser(rule.SyntaxTypeSQL)
 // "age >= 18 AND income > 30000"
 // 转换为: "age >= 18 && income > 30000"
 ```
 
 #### JavaScript-like 语法
 ```go
-parser := runehammer.NewExpressionParser(runehammer.SyntaxTypeJavaScript)
+import "gitee.com/damengde/runehammer/rule"
+
+parser := rule.NewExpressionParser(rule.SyntaxTypeJavaScript)
 // "orders.filter(o => o.amount > 100).length > 0"
 // 转换为: "Count(Filter(orders, \"amount > 100\")) > 0"
 ```
@@ -629,12 +668,14 @@ parser := runehammer.NewExpressionParser(runehammer.SyntaxTypeJavaScript)
 支持批量执行多个规则，提升处理效率：
 
 ```go
+import "gitee.com/damengde/runehammer/rule"
+
 rules := []interface{}{
-    runehammer.SimpleRule{
+    rule.SimpleRule{
         When: "Params.Amount > 100",
         Then: map[string]string{"Result.Discount": "0.05"},
     },
-    runehammer.SimpleRule{
+    rule.SimpleRule{
         When: "Params.Vip == true",
         Then: map[string]string{"Result.VipBonus": "50"},
     },
@@ -668,7 +709,7 @@ dynamicEngine.RegisterCustomFunctions(map[string]interface{}{
 })
 
 // 在规则中使用
-rule := runehammer.SimpleRule{
+rule := rule.SimpleRule{
     When: "ValidateEmail(Params.Customer.Email) && Params.Order.Amount > 0",
     Then: map[string]string{
         "Result.Discount": "CalculateDiscount(Params.Order.Amount, 0.1)",
@@ -722,7 +763,7 @@ engine, err := runehammer.New[YourResultType](
     // 动态配置
     runehammer.WithDynamicConfig(&runehammer.DynamicConfig{
         // 转换器配置
-        ConverterConfig: runehammer.ConverterConfig{
+        ConverterConfig: rule.ConverterConfig{
             StrictMode:      false,
             DefaultPriority: 50,
             VariablePrefix: map[string]string{
@@ -733,11 +774,11 @@ engine, err := runehammer.New[YourResultType](
         },
         
         // 解析器配置
-        ParserConfig: runehammer.ParserConfig{
-            DefaultSyntax: runehammer.SyntaxTypeSQL,
-            SupportedSyntax: []runehammer.SyntaxType{
-                runehammer.SyntaxTypeSQL,
-                runehammer.SyntaxTypeJavaScript,
+        ParserConfig: rule.ParserConfig{
+            DefaultSyntax: rule.SyntaxTypeSQL,
+            SupportedSyntax: []rule.SyntaxType{
+                rule.SyntaxTypeSQL,
+                rule.SyntaxTypeJavaScript,
             },
         },
         
@@ -751,7 +792,7 @@ engine, err := runehammer.New[YourResultType](
     }),
     
     // 快速配置选项
-    runehammer.WithDefaultSyntax(runehammer.SyntaxTypeSQL),
+    runehammer.WithDefaultSyntax(rule.SyntaxTypeSQL),
     runehammer.WithMaxConcurrency(10),
     runehammer.WithExecutionTimeout(30 * time.Second),
     runehammer.WithCustomFunctions(map[string]interface{}{
@@ -1238,7 +1279,7 @@ dynamicEngine.RegisterCustomFunctions(map[string]interface{}{
     },
 })
 
-metricRule := runehammer.MetricRule{
+metricRule := rule.MetricRule{
     Name:        "comprehensive_score",
     Description: "综合评分计算",
     Formula:     "CalculateScore(Params.Customer.Income, Params.Customer.Age, Params.Customer.Credit)",
@@ -1280,7 +1321,9 @@ result, err := dynamicEngine.ExecuteRuleDefinition(ctx, metricRule, input)
 动态引擎内置规则转换器，支持多种格式互转：
 
 ```go
-converter := runehammer.NewGRLConverter()
+import "gitee.com/damengde/runehammer/rule"
+
+converter := rule.NewGRLConverter()
 
 // 从 JSON 转换为结构体的示例
 jsonRule := `{
@@ -1295,18 +1338,18 @@ grl, err := converter.ConvertToGRL(jsonRule)
 // 生成标准的 GRL 规则
 
 // 从标准规则转换
-standardRule := runehammer.StandardRule{
+standardRule := rule.StandardRule{
     ID:          "approval_rule",
     Name:        "审批规则",
     Description: "自动审批逻辑",
     Priority:    100,
-    Conditions: runehammer.Condition{
+    Conditions: rule.Condition{
         Type:     "simple",
         Left:     "Params.Application.Score",
         Operator: ">=",
         Right:    700,
     },
-    Actions: []runehammer.Action{
+    Actions: []rule.Action{
         {
             Type:   "assign",
             Target: "Result.Approved",
@@ -1315,21 +1358,23 @@ standardRule := runehammer.StandardRule{
     },
 }
 
-grl, err = converter.ConvertRule(standardRule, runehammer.Definitions{})
+grl, err = converter.ConvertRule(standardRule, rule.Definitions{})
 ```
 
 ### 多语法支持示例
 
 ```go
-parser := runehammer.NewExpressionParser()
+import "gitee.com/damengde/runehammer/rule"
+
+parser := rule.NewExpressionParser()
 
 // SQL 语法转换 - 使用结构体字段
-parser.SetSyntax(runehammer.SyntaxTypeSQL)
+parser.SetSyntax(rule.SyntaxTypeSQL)
 condition, _ := parser.ParseCondition("Params.User.Age >= 18 AND Params.User.Income BETWEEN 30000 AND 100000")
 // 输出: "Params.User.Age >= 18 && Params.User.Income >= 30000 && Params.User.Income <= 100000"
 
 // JavaScript 语法转换 - 使用结构体字段
-parser.SetSyntax(runehammer.SyntaxTypeJavaScript)
+parser.SetSyntax(rule.SyntaxTypeJavaScript)
 condition, _ = parser.ParseCondition("Params.Orders.filter(o => o.amount > 100).length > 0")
 // 输出: "Count(Filter(Params.Orders, \"amount > 100\")) > 0"
 ```
@@ -1337,10 +1382,12 @@ condition, _ = parser.ParseCondition("Params.Orders.filter(o => o.amount > 100).
 ### 批量规则执行
 
 ```go
+import "gitee.com/damengde/runehammer/rule"
+
 // 定义多个不同类型的规则
 rules := []interface{}{
     // 简单规则
-    runehammer.SimpleRule{
+    rule.SimpleRule{
         When: "Params.Order.Amount > 500",
         Then: map[string]string{
             "Result.FreeShipping": "true",
@@ -1348,7 +1395,7 @@ rules := []interface{}{
     },
     
     // 指标规则
-    runehammer.MetricRule{
+    rule.MetricRule{
         Name:    "loyalty_score",
         Formula: "purchase_count * 10 + total_amount * 0.01",
         Variables: map[string]string{
@@ -1358,16 +1405,16 @@ rules := []interface{}{
     },
     
     // 标准规则
-    runehammer.StandardRule{
+    rule.StandardRule{
         ID:   "vip_check",
         Name: "VIP检查",
-        Conditions: runehammer.Condition{
+        Conditions: rule.Condition{
             Type:     "simple",
             Left:     "Params.Customer.VipLevel",
             Operator: ">=",
             Right:    3,
         },
-        Actions: []runehammer.Action{
+        Actions: []rule.Action{
             {
                 Type:   "assign",
                 Target: "Result.IsVip",
@@ -1516,7 +1563,7 @@ dynamicEngine := runehammer.NewDynamicEngine[MetricResult](
 businessResult, err := dbEngine.Exec(ctx, "user_level_check", input)
 
 // 指标计算使用动态引擎
-metricRule := runehammer.MetricRule{
+metricRule := rule.MetricRule{
     Name:    "risk_score",
     Formula: "income_score * 0.4 + credit_score * 0.6",
         Variables: map[string]string{

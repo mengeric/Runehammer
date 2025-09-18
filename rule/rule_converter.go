@@ -56,14 +56,16 @@ type ConverterConfig struct {
 
 // NewGRLConverter 创建GRL转换器
 func NewGRLConverter(config ...ConverterConfig) *GRLConverter {
-	defaultConfig := ConverterConfig{
-		VariablePrefix: map[string]string{
-			"customer": "customer",
-			"order":    "order",
-			"user":     "user",
-			"data":     "data",
-			"Result":   "Result",
-		},
+    defaultConfig := ConverterConfig{
+        VariablePrefix: map[string]string{
+            "customer": "customer",
+            "order":    "order",
+            "user":     "user",
+            "data":     "data",
+            // Support both lowercase and uppercase result prefixes
+            "result":   "result",
+            "Result":   "Result",
+        },
 		OperatorMapping: map[string]string{
 			"==":       "==",
 			"!=":       "!=",
@@ -473,12 +475,12 @@ func (c *GRLConverter) convertValue(value interface{}) string {
 
 // resolveTarget 解析目标
 func (c *GRLConverter) resolveTarget(target string) string {
-	// 检查是否是结果字段
-	if strings.HasPrefix(target, "Result.") {
-		field := strings.TrimPrefix(target, "Result.")
-		return fmt.Sprintf("Result[\"%s\"]", field)
-	}
-	return target
+    // 检查是否是结果字段
+    if strings.HasPrefix(target, "Result.") || strings.HasPrefix(target, "result.") {
+        field := strings.TrimPrefix(strings.TrimPrefix(target, "Result."), "result.")
+        return fmt.Sprintf("Result[\"%s\"]", field)
+    }
+    return target
 }
 
 // isVariable 检查是否是变量

@@ -178,35 +178,62 @@ func TestMemoryCacheDetailed(t *testing.T) {
 			})
 			
 			Convey("过期项优先清理", func() {
+				// 创建容量为10的缓存避免容量限制影响
+				cache10 := NewMemoryCache(10)
+				defer cache10.Close()
+				
 				// 添加一些即将过期的项
 				for i := 0; i < 3; i++ {
 					key := fmt.Sprintf("expire_key_%d", i)
 					value := []byte(fmt.Sprintf("expire_value_%d", i))
-					err := cache.Set(ctx, key, value, 50*time.Millisecond)
+					err := cache10.Set(ctx, key, value, 50*time.Millisecond)
 					So(err, ShouldBeNil)
 				}
 				
 				// 添加一些长期有效的项
-				for i := 0; i < 3; i++ {
+				for i := 0; i < 2; i++ {
 					key := fmt.Sprintf("long_key_%d", i)
 					value := []byte(fmt.Sprintf("long_value_%d", i))
-					err := cache.Set(ctx, key, value, 10*time.Hour)
+					err := cache10.Set(ctx, key, value, 10*time.Hour)
 					So(err, ShouldBeNil)
 				}
 				
 				// 等待短期项过期
 				time.Sleep(100 * time.Millisecond)
 				
+				// 现在创建容量受限的缓存来测试清理逻辑
+				cache5 := NewMemoryCache(5)
+				defer cache5.Close()
+				
+				// 先添加4个长期项到新缓存
+				for i := 0; i < 4; i++ {
+					key := fmt.Sprintf("long_key_%d", i)
+					value := []byte(fmt.Sprintf("long_value_%d", i))
+					err := cache5.Set(ctx, key, value, 10*time.Hour)
+					So(err, ShouldBeNil)
+				}
+				
+				// 添加1个即将过期的项
+				err := cache5.Set(ctx, "expire_key", []byte("expire_value"), 50*time.Millisecond)
+				So(err, ShouldBeNil)
+				
+				// 等待短期项过期
+				time.Sleep(100 * time.Millisecond)
+				
 				// 添加新项应该优先清理过期项
-				err := cache.Set(ctx, "final_key", []byte("final_value"), 1*time.Hour)
+				err = cache5.Set(ctx, "final_key", []byte("final_value"), 1*time.Hour)
 				So(err, ShouldBeNil)
 				
 				// 长期项应该仍然存在
-				for i := 0; i < 3; i++ {
+				for i := 0; i < 4; i++ {
 					key := fmt.Sprintf("long_key_%d", i)
-					_, err := cache.Get(ctx, key)
+					_, err := cache5.Get(ctx, key)
 					So(err, ShouldBeNil)
 				}
+				
+				// 过期项应该已被清理
+				_, err = cache5.Get(ctx, "expire_key")
+				So(err, ShouldNotBeNil)
 			})
 		})
 		
